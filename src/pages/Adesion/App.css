@@ -1,0 +1,195 @@
+/* src/App.css */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 600px;
+  border-radius: 8px;
+}
+
+h1, h2 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-control {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-bottom: 1px solid #ccc;
+}
+
+.form-control {
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.form-control:focus {
+  border-bottom: 2px solid #007bff;
+  background-color: #fff;
+}
+
+label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+input[type="text"], input[type="date"], input[type="checkbox"], select {
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+input[type="text"]:focus, input[type="date"]:focus, select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.dependent-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dependent-container input {
+  flex: 1;
+  margin-right: 10px;
+  padding: 10px;
+}
+
+button[type="button"], button[type="submit"] {
+  padding: 12px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  font-size: 16px;
+}
+
+button[type="button"] {
+  background-color: #007bff;
+  color: white;
+}
+
+button[type="button"]:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+button[type="submit"] {
+  background-color: red;
+  color: white;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+button[type="submit"]:hover {
+  background-color: darkred;
+}
+
+button[type="submit"]:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.dropdown-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: white;
+  position: absolute;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.dropdown-list li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.dropdown-list li:hover {
+  background-color: #f0f0f0;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #0056b3;
+}
+
+header {
+  margin-bottom: 20px;
+}
+
+header img {
+  max-width: 100px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.styled-name {
+  position: relative;
+  padding: 5px 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #007bff;
+  border-radius: 5px;
+  margin-left: 5px;
+}
+
+.nav-link {
+  color: #007bff;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.nav-link:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.nav-link i {
+  margin-right: 5px;
+}
+
+.bg-dark {
+  --bs-bg-opacity: 0;
+}

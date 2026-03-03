@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind utilities;
+@tailwind components;
+
+body {
+  -webkit-font-smoothing: antialiased; 
+}
+
+@media (min-width: 1280px) {
+  .container {
+      max-width: 1000px;
+  }
+  
+}
+
+
+.bg-dark {
+   --bs-bg-opacity: 0; 
+}
+
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
+

@@ -1,0 +1,234 @@
+.option-container {
+  display: flex;
+  align-items: center; /* Alinha verticalmente no centro */
+  margin-bottom: 8px; /* Espaço entre as linhas */
+}
+
+.custom-check {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px; /* Espaço à direita da bolinha */
+  border: 2px solid #000; /* Borda preta */
+  border-radius: 50%; /* Arredondado */
+  text-align: center;
+  line-height: 20px;
+  font-weight: bold;
+  font-size: 18px;
+  color: transparent; /* Esconde o X inicialmente */
+  transition: background-color 0.3s; /* Transição suave */
+}
+
+.custom-check.checked {
+  background-color: white; /* Verde quando checado */
+  color: red; /* O X ficará visível em vermelho */
+}
+
+.custom-check:not(.checked):hover {
+  background-color: #f0f0f0; /* Muda a cor ao passar o mouse */
+}
+
+.custom-sexo {
+  display: flex;
+  align-items: center; /* Alinha verticalmente no centro */
+  margin-bottom: 8px; /* Espaço entre as linhas */
+}
+
+.custom-check {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px; /* Espaço à direita da bolinha */
+  border: 2px solid #000; /* Borda preta */
+  border-radius: 50%; /* Arredondado */
+  text-align: center;
+  line-height: 20px;
+  font-weight: bold;
+  font-size: 18px;
+  color: transparent; /* Esconde o X inicialmente */
+  transition: background-color 0.3s; /* Transição suave */
+}
+
+.custom-check.checked {
+  background-color: #007bff; /* Azul quando checado */
+  color: white; /* O X ficará visível em branco */
+}
+
+.custom-check:not(.checked):hover {
+  background-color: #e0e0e0; /* Muda a cor ao passar o mouse */
+}
+
+/* Especificidades para as opções de sexo */
+.custom-sexo .custom-check {
+  border-color: #000; /* Laranja para as bolinhas de sexo */
+}
+
+.custom-sexo .custom-check.checked {
+  background-color: white; /* Vermelho quando checado */
+  color: red; /* O X ficará visível em branco */
+}
+
+.option-container {
+  display: flex;
+  align-items: center; /* Alinha verticalmente no centro */
+  margin-right: 16px; /* Espaço entre as opções */
+}
+
+.option-container {
+  display: flex;
+  align-items: center; /* Alinha verticalmente no centro */
+  margin-right: 16px; /* Espaço entre as opções */
+}
+
+.check-pagamento {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px; /* Espaço à direita da bolinha */
+  border: 2px solid #000; /* Borda preta */
+  border-radius: 50%; /* Arredondado */
+  text-align: center;
+  line-height: 20px;
+  font-weight: bold;
+  font-size: 18px;
+  color: transparent; /* Esconde o X inicialmente */
+  transition: background-color 0.3s; /* Transição suave */
+}
+
+.check-pagamento.checked {
+  background-color: #fff; /* Verde quando checado */
+  color: red; /* O X ficará visível em branco */
+}
+
+.check-pagamento:not(.checked):hover {
+  background-color: #f0f0f0; /* Muda a cor ao passar o mouse */
+}
+
+/* Estilo para o container dos dados da conta */
+.account-info {
+  margin-top: 8px; /* Espaço acima dos campos de conta */
+}
+
+.account-info {
+  display: flex; /* Utiliza flexbox para alinhar os campos lado a lado */
+  margin-top: 8px; /* Espaço acima dos campos de conta */
+}
+
+.account-info div {
+  margin-right: 16px; /* Espaço entre os campos */
+}
+
+.check-envio {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px; /* Espaço à direita da bolinha */
+  border: 2px solid #000; /* Borda preta */
+  border-radius: 50%; /* Arredondado */
+  text-align: center;
+  line-height: 20px;
+  font-weight: bold;
+  font-size: 18px;
+  color: transparent; /* Esconde o X inicialmente */
+  transition: background-color 0.3s; /* Transição suave */
+}
+
+.check-envio.checked {
+  background-color: #ffff; /* Verde quando checado */
+  color: red; /* O X ficará visível em branco */
+}
+
+.check-envio:not(.checked):hover {
+  background-color: #f0f0f0; /* Muda a cor ao passar o mouse */
+}
+
+.option-container {
+  display: flex;
+  align-items: center; /* Alinha verticalmente no centro */
+  margin-right: 16px; /* Espaço entre as opções */
+}
+
+.container2 {
+  display: none; /* Esconde a div normalmente */
+  display: flex; /* Usando flexbox para dispor os itens */
+  justify-content: space-between; /* Coloca os itens em extremidades opostas */
+  align-items: center; /* Alinha verticalmente ao centro */
+  margin-bottom: 5rem;
+  width: 80%; /* Largura do contêiner, ajuste conforme necessário */
+  margin: 2rem auto; /* Centraliza o contêiner na página */
+}
+
+.container2 {
+  display: none; /* Esconde a div normalmente */
+ 
+}
+
+.assinatura {
+  text-align: center; /* Centraliza o texto dentro de cada assinatura */
+  width: 45%; /* Define a largura de cada assinatura */
+}
+
+hr {
+  border: 0; /* Remove a borda padrão */
+  height: 1px; /* Altura da linha */
+  background: #000; /* Cor da linha */
+  margin: 10px 0; /* Margem acima e abaixo da linha */
+}
+
+h2 {
+  font-size: 20px; /* Tamanho da fonte para o título */
+  margin: 0; /* Remove margem do título */
+}
+
+@media print {
+  @page {
+    margin: 0; /* Remove margens da página */
+  }
+
+  body {
+    margin: 0; /* Remove margens do corpo do documento */
+  }
+
+  /* Oculta elementos indesejados */
+  .hide-print {
+    display: none; /* Oculta elementos que não devem aparecer no PDF */
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .container2 {
+    display: flex; /* Usando flexbox para dispor os itens */
+    justify-content: space-between; /* Coloca os itens em extremidades opostas */
+    align-items: center; /* Alinha verticalmente ao centro */
+    margin-bottom: 5rem;
+    width: 80%; /* Largura do contêiner, ajuste conforme necessário */
+    margin: 5rem auto; /* Centraliza o contêiner na página */
+  }
+
+  .container2 h2 {
+    font-weight: bold; /* Torna o texto do h2 em negrito */
+  }
+
+  /* Estilo da tabela */
+  table {
+    width: calc(100% - 20px); /* Reduz a largura para evitar bordas externas */
+    margin: 10px auto; /* Define margens superior/inferior e centraliza */
+    margin-bottom: 0; /* Remove margem inferior da tabela */
+  }
+
+  th,
+  td {
+    padding: 8px; /* Adiciona espaço interno nas células */
+    text-align: left; /* Alinha o texto à esquerda */
+  }
+
+  tr {
+    background-color: #ffff;
+  }
+
+  th {
+    background-color: #ffff;
+  }
+}
