@@ -21,14 +21,15 @@ function App() {
   const [registrationCode, setRegistrationCode] = useState("");
   const [code, setCode] = useState("");
   const [cpf, setCpf] = useState("");
-  const [dependents, setDependents] = React.useState([]);
-  const [hasDependents, setHasDependents] = React.useState(false);
+  const [dependents, setDependents] = useState([]);
+  const [hasDependents, setHasDependents] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [pdfUrl, setPdfUrl] = useState(null);
   const [detalhe, setDetalhe] = useState(false);
-  const [pdfBase64, setPdfBase64] = useState(""); // Estado para armazenar o PDF em Base64
-  const [isModalOpen, setIsModalOpen] = useState(false); // Controle do modal
+  const [pdfBase64, setPdfBase64] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || "";
@@ -37,106 +38,43 @@ function App() {
   const token =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
 
-  /*   const chaveFunc = process.env.REACT_APP_CHAVE_FUNC;
-  const token = process.env.REACT_APP_CHAVE_TOKEN; */
+  // Fetch dos dados do beneficiário
+  useEffect(() => {
+    const fetchBeneficiaryData = async () => {
+      try {
+        const queryParams = new URLSearchParams(window.location.search);
+        const chavePasse = queryParams.get("chavePasse") || "";
 
-  const MenssagemSemDependent = () =>
-    toast.success(
-      "Exclusão feita com sucesso, aperte o botao voltar para acompanhar a solictação",
-      {
-        position: "top-center",
-        autoClose: 5500,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        closeButton: false,
-        theme: "dark",
-      }
-    );
-
-  const MenssagemDependent = () =>
-    toast.success(
-      "Exclusão feita com sucesso, aperte o botao voltar para acompanhar a solictação",
-      {
-        position: "top-center",
-        autoClose: 5500,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        closeButton: false,
-        theme: "dark",
-      }
-    );
-
-// Fetch dos dados do beneficiário
-useEffect(() => {
-  const fetchBeneficiaryData = async () => {
-    try {
-      // Obtendo chavePasse da URL
-      const queryParams = new URLSearchParams(window.location.search);
-      const chavePasse = queryParams.get("chavePasse") || "";
-
-      if (!chavePasse) {
-        console.error("Chave Passe não foi fornecida na URL.");
-        setLoginError("Chave Passe não encontrada na URL.");
-        return;
-      }
-
-      // Primeiro GET: busca informações do beneficiário usando chavePasse
-      const response = await axios.get(
-        `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
-        {
-          params: {
-            chavePasse,
-            chaveFuncionalidade: chaveFunc,
-          },
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `${token}`,
-          },
+        if (!chavePasse) {
+          console.error("Chave Passe não foi fornecida na URL.");
+          setLoginError("Chave Passe não encontrada na URL.");
+          return;
         }
-      );
 
-      // Obtendo chaveUnica da resposta
-      const chaveUnica = response.data?.data?.chaveUnica;
+        const response = await axios.get(
+          `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
+          {
+            params: {
+              chavePasse,
+              chaveFuncionalidade: chaveFunc,
+            },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `${token}`,
+            },
+          }
+        );
 
-      if (!chaveUnica) {
-        console.error("Chave Unica não encontrada na resposta.");
-        setLoginError("Erro ao obter chave única do beneficiário.");
-        return;
-      }
+        const chaveUnica = response.data?.data?.chaveUnica;
 
-      // PRIMEIRO: Busca os dados do TITULAR usando chaveUnica
-      const titularResponse = await axios.get(
-        `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (!chaveUnica) {
+          console.error("Chave Unica não encontrada na resposta.");
+          setLoginError("Erro ao obter chave única do beneficiário.");
+          return;
         }
-      );
 
-      // Verifica se a resposta contém dados válidos do TITULAR
-      if (titularResponse.data && titularResponse.data.data) {
-        const {
-          codigo: code = "",
-          nome: beneficiaryName = "",
-          matricula: registrationCode = "",
-          cpf: titularCpf = "",
-        } = titularResponse.data.data;
-
-        setCode(code);
-        setBeneficiaryName(beneficiaryName);
-        setRegistrationCode(registrationCode);
-        setCpf(titularCpf);
-
-        // SEGUNDO: Busca os DEPENDENTES do titular
-        const dependentesResponse = await axios.get(
-          `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}/dependentes`,
+        const titularResponse = await axios.get(
+          `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -144,161 +82,326 @@ useEffect(() => {
           }
         );
 
-        // Verifica se a resposta contém dados válidos de DEPENDENTES
-        if (dependentesResponse.data && dependentesResponse.data.data) {
-          const { dependentes = [] } = dependentesResponse.data.data;
+        if (titularResponse.data && titularResponse.data.data) {
+          const {
+            codigo: code = "",
+            nome: beneficiaryName = "",
+            matricula: registrationCode = "",
+            cpf: titularCpf = "",
+          } = titularResponse.data.data;
 
-          setHasDependents(dependentes.length > 0);
-          setDependents(
-            dependentes.map((dependent) => ({
+          setCode(code);
+          setBeneficiaryName(beneficiaryName);
+          setRegistrationCode(registrationCode);
+          setCpf(titularCpf);
+
+          const dependentesResponse = await axios.get(
+            `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}/dependentes`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (dependentesResponse.data && dependentesResponse.data.data) {
+            const { dependentes = [] } = dependentesResponse.data.data;
+            
+            const hasDeps = dependentes.length > 0;
+            
+            const formattedDependents = dependentes.map((dependent) => ({
               nome: dependent.nome,
               cpf: dependent.cpf,
               codigo: dependent.codigo,
               cns: dependent.cns,
               nmMae: dependent.nmMae,
               dtNascimento: dependent.dtNascimento,
-              nmBeneficiario_titular: beneficiaryName, // Nome do titular CORRETO
-              nuCpf_titular: titularCpf, // CPF do titular CORRETO
-            }))
-          );
+              nmBeneficiario_titular: beneficiaryName,
+              nuCpf_titular: titularCpf,
+              excluir: false
+            }));
+            
+            setHasDependents(hasDeps);
+            setDependents(formattedDependents);
+          } else {
+            setHasDependents(false);
+            setDependents([]);
+          }
+        } else {
+          throw new Error("No valid data received for titular");
         }
-      } else {
-        throw new Error("No valid data received for titular");
+      } catch (error) {
+        console.error("Erro ao buscar dados do beneficiário:", error);
+        setLoginError("Erro ao buscar dados do beneficiário. Tente novamente.");
       }
-    } catch (error) {
-      console.error("Erro ao buscar dados do beneficiário:", error);
-      setLoginError("Erro ao buscar dados do beneficiário. Tente novamente.");
-    }
-  };
+    };
 
-  fetchBeneficiaryData();
-}, [chavePasse, chaveFunc, token]); // Dependências do useEffect
-
-  const [newDependent, setNewDependent] = React.useState("");
-  const [savedDependents, setSavedDependents] = useState([]); // Dependentes temporários
-  const [availableDependents, setAvailableDependents] = React.useState([]);
+    fetchBeneficiaryData();
+  }, [chavePasse, chaveFunc, token]);
 
   const [isAllChecked, setIsAllChecked] = useState(false);
+  const [excludeAll, setExcludeAll] = useState(false);
+  const [excludeFinancialDependent, setExcludeFinancialDependent] = useState(false);
 
-  const handleCheckboxChange = () => {
-    setIsAllChecked(!isAllChecked);
-    // Resetar os outros estados quando 'isAllChecked' for alterado para true
-    if (!isAllChecked) {
-      setExcludeAll(false);
-      setExcludeFinancialDependent(false);
-    }
+  // Função para alternar o status de exclusão de um dependente
+  const toggleDependentExclusion = (index) => {
+    setDependents(prevDependents => {
+      const updated = [...prevDependents];
+      updated[index] = {
+        ...updated[index],
+        excluir: !updated[index].excluir
+      };
+      return updated;
+    });
+    
+    setIsAllChecked(false);
   };
 
-  const [excludeAll, setExcludeAll] = useState(false); // Controle para exclusão total
-  const [excludeFinancialDependent, setExcludeFinancialDependent] =
-    useState(false);
+  const handleCheckboxChange = () => {
+    const newValue = !isAllChecked;
+    setIsAllChecked(newValue);
+    
+    if (newValue) {
+      setDependents(prevDependents => 
+        prevDependents.map(dep => ({ ...dep, excluir: true }))
+      );
+    } else {
+      setDependents(prevDependents => 
+        prevDependents.map(dep => ({ ...dep, excluir: false }))
+      );
+    }
+  };
 
   const handleExcludeFinancialDependentChange = () => {
     const newValue = !excludeFinancialDependent;
     setExcludeFinancialDependent(newValue);
-    setIsAllChecked(false); // Desmarcando o isAllChecked quando o 'excludeFinancialDependent' mudar
-
+    
+    setIsAllChecked(false);
+    setExcludeAll(false);
+    
     if (newValue) {
-      // Salva dependentes atuais e limpa a lista
-      setSavedDependents(dependents);
-      setDependents([]);
-      setHasDependents(false);
-    } else {
-      // Restaura os dependentes salvos
-      setDependents(savedDependents);
-      setHasDependents(savedDependents.length > 0);
-      setSavedDependents([]);
-    }
-    setExcludeFinancialDependent(newValue); // Atualiza o estado do checkbox
-  };
-
-  const handleDependentChange = (value) => {
-    if (value) {
-      const selectedDependent = JSON.parse(value);
-      // Verifica se o dependente já não está na lista
-      if (!dependents.some((dep) => dep.nome === selectedDependent.nome)) {
-        setDependents((prev) => [...prev, selectedDependent]);
-        setNewDependent("");
-        setAvailableDependents((prev) =>
-          prev.filter((dep) => dep.nome !== selectedDependent.nome)
-        );
-        setHasDependents(true);
-      } else {
-        console.warn("Dependente já adicionado.");
-      }
-    }
-  };
-
-  const removeDependent = (index) => {
-    const removedDependent = dependents[index];
-    const updatedDependents = dependents.filter((_, i) => i !== index);
-    setDependents(updatedDependents);
-
-    // Restaura o dependente removido à lista de disponíveis se a exclusão não for financeira
-    if (!excludeFinancialDependent) {
-      setAvailableDependents((prev) => [...prev, removedDependent]);
-    }
-
-    if (updatedDependents.length === 0) {
-      setHasDependents(false);
+      setDependents(prevDependents => 
+        prevDependents.map(dep => ({ ...dep, excluir: false }))
+      );
     }
   };
 
   const handleExcludeAllChange = () => {
-    setIsAllChecked(false); // Desmarcando o isAllChecked quando o 'excludeFinancialDependent' mudar
-
-    // Inverte o estado do checkbox
     const newValue = !excludeAll;
     setExcludeAll(newValue);
-
+    
+    setIsAllChecked(false);
+    setExcludeFinancialDependent(false);
+    
     if (newValue) {
-      // Salva os dependentes atuais em `savedDependents` e limpa `dependents`
-      setSavedDependents(dependents);
-      setDependents([]);
-      setHasDependents(false);
+      setDependents(prevDependents => 
+        prevDependents.map(dep => ({ ...dep, excluir: true }))
+      );
     } else {
-      // Restaura os dependentes salvos em `savedDependents`
-      setDependents(savedDependents);
-      setHasDependents(savedDependents.length > 0);
-      setSavedDependents([]);
+      setDependents(prevDependents => 
+        prevDependents.map(dep => ({ ...dep, excluir: false }))
+      );
     }
   };
 
-  const filteredAvailableDependents = availableDependents.filter(
-    (dep) => !dependents.includes(dep)
-  );
-
-  const handleOpenPDF = () => {
-    navigate("/pdf-viewer", { state: { pdfBase64 } }); // Passe o estado corretamente
+  // Verifica se alguma opção de exclusão foi selecionada
+  const hasExclusionSelected = () => {
+    if (excludeAll || excludeFinancialDependent) {
+      return true;
+    }
+    
+    if (dependents.some(d => d.excluir)) {
+      return true;
+    }
+    
+    return false;
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Função para renderizar a seção de dependentes
+  const renderDependentsSection = () => {
+    if (dependents.length === 0) {
+      return null;
+    }
 
-  function confirmAction(message) {
-    return Swal.fire({
-      title: "Confirmação",
-      text: message,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sim",
-      cancelButtonText: "Não",
-    }).then((result) => result.isConfirmed);
-  }
+    const isDisabled = excludeAll || excludeFinancialDependent;
+    const hasSelectedForExclusion = dependents.some(d => d.excluir);
+
+    return (
+      <div className="form-group mb-4">
+        {/* Checkbox "Excluir todos os dependentes" */}
+        {!excludeAll && !excludeFinancialDependent && dependents.length > 0 && (
+          <motion.label
+            className="flex items-center cursor-pointer mb-3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={isAllChecked}
+              onChange={handleCheckboxChange}
+            />
+            <span
+              className={`flex items-center justify-center w-6 h-6 border-2 
+              ${isAllChecked ? "bg-black text-white border-black" : "bg-white border-black"}
+              rounded transition-all duration-200 hover:border-gray-600 hover:shadow-lg`}
+            >
+              {isAllChecked && "✓"}
+            </span>
+            <span
+              className="ml-2 text-black-800 bg-white rounded p-1 cursor-pointer"
+              onClick={handleCheckboxChange}
+            >
+              Excluir todos os dependentes
+            </span>
+          </motion.label>
+        )}
+
+        {/* Mensagens informativas */}
+        {excludeAll && (
+          <div className="mb-3 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+            <span className="font-semibold">⚠️ Exclusão total do titular e todos os dependentes</span>
+          </div>
+        )}
+
+        {excludeFinancialDependent && (
+          <div className="mb-3 p-2 bg-blue-100 border-l-4 border-blue-500 text-blue-800 rounded">
+            <span className="font-semibold">ℹ️ Exclusão do titular: {beneficiaryName} - Dependentes vinculados (serão mantidos no plano)</span>
+          </div>
+        )}
+        
+        <div className="ml-2 text-black-800 bg-white rounded p-1 mb-3 cursor-default">
+          <span className="font-semibold">
+            {excludeAll 
+              ? "Dependentes vinculados (serão excluídos junto com o titular):" 
+              : excludeFinancialDependent
+                ? "Dependentes vinculados (serão mantidos no plano):"
+                : "Selecione um ou mais dependentes para exclusão, podendo incluir todos, se desejar:"}
+          </span>
+        </div>
+        
+        <ul className="space-y-2 mb-4">
+          {dependents.map((dependent, index) => (
+            <motion.li
+              key={`${dependent.nome}-${index}`}
+              className={`flex items-center justify-between p-3 rounded-md shadow-sm border-l-4 transition-all ${
+                excludeAll
+                  ? "bg-yellow-50 border-yellow-400"
+                  : excludeFinancialDependent
+                    ? "bg-blue-50 border-blue-300"
+                    : dependent.excluir 
+                      ? "bg-red-50 border-red-500" 
+                      : "bg-green-50 border-green-500"
+              }`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <div className="flex items-center flex-1">
+                {excludeAll || excludeFinancialDependent ? (
+                  <span className="flex items-center">
+                    <span className="w-6 h-6 mr-3 inline-block"></span>
+                    <span className={`font-medium ${
+                      excludeAll ? "text-gray-800" : "text-gray-800"
+                    }`}>
+                      {dependent.nome}
+                    </span>
+                  </span>
+                ) : (
+                  <label className="flex items-center mr-3">
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={dependent.excluir}
+                      onChange={() => toggleDependentExclusion(index)}
+                    />
+                    <span
+                      className={`flex items-center justify-center w-6 h-6 border-2 rounded transition-all duration-200 ${
+                        dependent.excluir
+                          ? "bg-red-500 border-red-500 text-white cursor-pointer"
+                          : "bg-white border-gray-700 hover:border-gray-600 cursor-pointer"
+                      }`}
+                    >
+                      {dependent.excluir && "✓"}
+                    </span>
+                  </label>
+                )}
+                <span className={`font-medium ${
+                  excludeAll
+                    ? "text-gray-800"
+                    : excludeFinancialDependent
+                      ? "text-gray-800"
+                      : dependent.excluir 
+                        ? "text-gray-900" 
+                        : "text-gray-800"
+                }`}>
+                  {dependent.nome}
+                </span>
+              </div>
+              <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                excludeAll
+                  ? "bg-yellow-200 text-yellow-800"
+                  : excludeFinancialDependent
+                    ? "bg-blue-200 text-blue-800"
+                    : dependent.excluir 
+                      ? "bg-red-200 text-red-800" 
+                      : "bg-green-200 text-green-800"
+              }`}>
+                {excludeAll 
+                  ? "Será excluído" 
+                  : excludeFinancialDependent 
+                    ? "Será mantido"
+                    : dependent.excluir 
+                      ? "Será excluído" 
+                      : "Será mantido"
+                }
+              </span>
+            </motion.li>
+          ))}
+        </ul>
+
+        {/* Mensagens explicativas */}
+        {excludeAll && (
+          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-sm">
+            <span className="font-semibold">ℹ️ Informação:</span> Todos os dependentes serão excluídos junto com o titular. Não é possível selecionar dependentes individualmente nesta modalidade.
+          </div>
+        )}
+
+        {excludeFinancialDependent && (
+          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-700 text-sm">
+            <span className="font-semibold">ℹ️ Informação:</span> Os dependentes serão mantidos no plano. Você continuará como responsável financeiro por eles.
+          </div>
+        )}
+
+        {/* Resumo das exclusões */}
+        {!isDisabled && hasSelectedForExclusion && (
+          <div className="mt-3 p-3 bg-gray-100 rounded-lg">
+            <p className="text-sm">
+              <span className="font-semibold">Resumo:</span>{" "}
+              {dependents.filter(d => d.excluir).length} dependente(s) serão excluídos e{" "}
+              {dependents.filter(d => !d.excluir).length} serão mantidos.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const confirmExclusion = async () => {
+    const dependentsToExclude = dependents.filter(d => d.excluir);
+    
     let message = "";
 
-    if (dependents && dependents.length > 0) {
+    if (excludeAll) {
+      message = "Você está prestes a excluir o titular e TODOS os dependentes vinculados.";
+    } else if (excludeFinancialDependent) {
+      message = "Você está prestes a excluir apenas o titular, mas permanecerá como responsável financeiro. Os dependentes serão mantidos.";
+    } else if (dependentsToExclude.length > 0) {
       message = `Você está prestes a excluir os seguintes dependentes:<br><br>`;
-      dependents.forEach((dep, index) => {
+      dependentsToExclude.forEach((dep, index) => {
         message += `${index + 1}. ${dep.nome} - CPF: ${dep.cpf}<br>`;
       });
-    } else if (excludeFinancialDependent) {
-      message =
-        "Você está prestes a excluir apenas o titular, mas permanecerá como responsável financeiro.";
-    } else if (excludeAll) {
-      message =
-        "Você está prestes a excluir o titular e TODOS os dependentes vinculados.";
     } else {
       message = "Você está prestes a excluir apenas o titular.";
     }
@@ -319,62 +422,7 @@ useEffect(() => {
     return result.isConfirmed;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Verificar confirmação
-    const confirmed = await confirmExclusion();
-    if (!confirmed) return;
-
-    setIsSubmitting(true);
-
-    const clearFields = () => {
-      setExcludeAll("");
-      setExcludeFinancialDependent("");
-      setHasDependents("");
-      setDependents("");
-    };
-
-    try {
-      const tp_exclusao =
-        dependents && dependents.length > 0
-          ? 3
-          : excludeFinancialDependent
-          ? 2
-          : 1;
-
-      const response = await fetch(
-        "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios/salvar",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            beneficiaryName,
-            registrationCode,
-            cpf,
-            code,
-            tp_exclusao,
-            dependents,
-          }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Erro ao salvar os dados");
-      }
-
-      const result = await response.json();
-      MenssagemSemDependent();
-      clearFields();
-      setIsSubmitting(false); // Fim da submissão (sucesso)
-    } catch (error) {
-      console.error("Erro:", error);
-      MenssagemDependent();
-      setIsSubmitting(false); // Fim da submissão (erro)
-    }
-
+  const generatePDF = () => {
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -383,15 +431,10 @@ useEffect(() => {
       floatPrecision: 16,
     });
 
-    // Tamanho e posicionamento do logo
-    // Obter tamanho da página
     const pageWidth = doc.internal.pageSize.getWidth();
+    const logoWidth = pageWidth;
+    const logoHeight = 40;
 
-    // Definir o tamanho da logo para cobrir todo o cabeçalho
-    const logoWidth = pageWidth; // Largura total da página
-    const logoHeight = 40; // Altura do cabeçalho ajustável
-
-    // Adicionar logo ocupando todo o cabeçalho
     doc.addImage(logo, "JPEG", 0, 0, logoWidth, logoHeight);
 
     doc.setFont("Arial", "bold");
@@ -422,32 +465,6 @@ useEffect(() => {
         .replace(/(\d{3})(\d{2})$/, "$1-$2");
     }
 
-    const dtSolicitacao = new Date();
-    const offset = dtSolicitacao.getTimezoneOffset() * 60000;
-    const localTime = new Date(dtSolicitacao.getTime() - offset)
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " "); // Formato: YYYY-MM-DD HH:mm:ss
-
-    // Gera o PROTOCOLO a partir da data e hora atual
-    const generateProtocol = () => {
-      const now = new Date(); // Obter a data e hora atual
-
-      // Extrair componentes da data e hora
-      const day = String(now.getDate()).padStart(2, "0");
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      const seconds = String(now.getSeconds()).padStart(2, "0");
-
-      // Montar o protocolo no formato desejado
-      return `${day}${month}${year}${hours}${minutes}${seconds}`;
-    };
-
-    const protocolo = generateProtocol(); // Gera o PROTOCOLO
-
-    // Usando a variável cpf
     const cpfFormatado = formatarCPF(cpf);
     const fixedText1 = [
       "",
@@ -462,21 +479,21 @@ useEffect(() => {
         const splitText = doc.splitTextToSize(line, 180);
         splitText.forEach((textLine) => {
           doc.text(textLine, 10, yOffset, { maxWidth: 190, align: "justify" });
-          yOffset += 5; // Espaço entre linhas
+          yOffset += 5;
         });
       } else {
-        yOffset += 5; // Adiciona espaço para quebras de linha
+        yOffset += 5;
       }
     });
 
-    // Adiciona dependentes se existirem
-    if (hasDependents && dependents.length > 0) {
+    const dependentsToExclude = excludeAll ? dependents : (excludeFinancialDependent ? [] : dependents.filter(d => d.excluir));
+    
+    if (dependentsToExclude.length > 0) {
       doc.setFont("Arial", "normal");
       doc.text("", 8, yOffset, { maxWidth: 190, align: "justify" });
       yOffset += 3;
 
-      dependents.forEach((dependent) => {
-        // Formata a data de nascimento para o formato DD/MM/YYYY
+      dependentsToExclude.forEach((dependent) => {
         const formattedDate = new Date(
           dependent?.dtNascimento
         ).toLocaleDateString("pt-BR");
@@ -494,17 +511,17 @@ useEffect(() => {
         });
       });
 
-      yOffset -= 6; // Ajusta a Y offset após a lista de dependentes
+      yOffset -= 6;
     } else {
-      // Adiciona um incremento ao yOffset para descer o titular
-      yOffset += 4; // Ajuste este valor conforme necessário
+      yOffset += 4;
       let beneficiaryText = `${beneficiaryName} / CPF: ${formatarCPF(cpf)}`;
 
       if (excludeAll) {
         beneficiaryText += " e de todos os meus dependentes a mim vinculados.";
       } else if (excludeFinancialDependent) {
-        beneficiaryText += " e vou ficar como responsável financeiro.";
+        beneficiaryText += " (exclusão apenas do titular, mantendo-se como responsável financeiro).";
       }
+      
       const splitBeneficiaryText = doc.splitTextToSize(beneficiaryText, 190);
       splitBeneficiaryText.forEach((textLine) => {
         doc.text(textLine, 10, yOffset, { maxWidth: 190, align: "justify" });
@@ -540,7 +557,7 @@ useEffect(() => {
           yOffset += 4.5;
         });
       } else {
-        yOffset += 5; // Adiciona espaço para quebras de linha
+        yOffset += 5;
       }
     });
 
@@ -549,65 +566,47 @@ useEffect(() => {
       const dia = dataAtual.getDate();
       const mes = dataAtual.toLocaleString("pt-BR", { month: "long" });
       const ano = dataAtual.getFullYear();
-
-      // Retornar a string formatada
       return `João Pessoa, ${dia} de ${mes} de ${ano}.`;
     }
 
-    // Text "João Pessoa, _____ de _______ de _______" à direita e mais para baixo
     doc.setFont("Arial", "normal");
-    yOffset += 5; // Add more space before the location and date text
+    yOffset += 5;
     const centralText = formatarData();
     const centralTextWidth = doc.getTextWidth(centralText);
     const xRight = pageWidth - 10 - centralTextWidth;
     doc.text(centralText, xRight, yOffset);
-    yOffset += 11; // Additional space after location and date
+    yOffset += 11;
 
-    // Gera o PROTOCOLO
     const generateProtocol2 = () => {
-      const now = new Date(); // Obter a data e hora atual
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
 
-      // Extrair componentes da data e hora
-      const day = String(now.getDate()).padStart(2, "0"); // Dia (DD)
-      const month = String(now.getMonth() + 1).padStart(2, "0"); // Mês (MM)
-      const year = now.getFullYear(); // Ano (YYYY)
-      const hours = String(now.getHours()).padStart(2, "0"); // Horas (HH)
-      const minutes = String(now.getMinutes()).padStart(2, "0"); // Minutos (MM)
-
-      // Subtrair 3 segundos
       let seconds = now.getSeconds() - 3;
       if (seconds < 0) {
-        seconds = 60 + seconds; // Ajusta para o caso de subtrair e o valor ficar negativo
-        now.setMinutes(now.getMinutes() - 1); // Ajusta os minutos se necessário
+        seconds = 60 + seconds;
+        now.setMinutes(now.getMinutes() - 1);
       }
 
-      seconds = String(seconds).padStart(2, "0"); // Formatar os segundos para dois dígitos
+      seconds = String(seconds).padStart(2, "0");
 
-      // Montar o protocolo no formato desejado
       return `${day}${month}${year}${hours}${minutes}${seconds}`;
     };
 
-    // Gera o PROTOCOLO
-    const protocolo2 = generateProtocol2();
-
-    // Text "NÚMERO DE PROTOCOLO" com PROTOCOLO em negrito
     const beneficiaryTitleText = `Assinatura do Titular `;
     const beneficiaryTitleWidth = doc.getTextWidth(beneficiaryTitleText);
     const titleCenter = (pageWidth - beneficiaryTitleWidth) / 2;
 
-    // Primeiro, desenha o texto "NÚMERO DE PROTOCOLO: " com a fonte normal
     doc.text(beneficiaryTitleText, titleCenter, yOffset);
+    yOffset += 7;
 
-    // Ajusta o yOffset para a próxima linha para o PROTOCOLO
-    yOffset += 7; // Distância entre as linhas (ajuste conforme necessário)
-
-    // Depois, aplica a fonte negrito e desenha o PROTOCOLO
-    doc.setFont("Helvetica", "bold"); // Usando a fonte negrito
+    doc.setFont("Helvetica", "bold");
     const protocolTextWidth = doc.getTextWidth(
       "_______________________________________"
     );
-
-    // Centraliza o PROTOCOLO na mesma linha
     const protocolTextCenter = (pageWidth - protocolTextWidth) / 2;
     doc.text(
       "_______________________________________",
@@ -615,74 +614,67 @@ useEffect(() => {
       yOffset
     );
 
-    // Restaura a fonte para normal
     doc.setFont("Helvetica", "normal");
     if (hasDependents) {
-      yOffset += 12; // Aumenta o yOffset se tiver dependentes
+      yOffset += 12;
     } else {
-      yOffset += 15; // Aumenta o yOffset se não tiver dependentes
+      yOffset += 15;
     }
 
-    if (hasDependents.length == 1) {
-      yOffset += 35; // Aumenta o yOffset se houver mais de 6 dependentes
+    if (dependents.filter(d => d.excluir).length === 1) {
+      yOffset += 35;
     } else {
-      yOffset += 15; // Aumenta o yOffset se houver 6 ou menos dependentes
+      yOffset += 15;
     }
 
-    if (hasDependents.length == 2) {
-      yOffset += 35; // Aumenta o yOffset se houver mais de 6 dependentes
+    if (dependents.filter(d => d.excluir).length === 2) {
+      yOffset += 35;
     } else {
-      yOffset += -6; // Aumenta o yOffset se houver 6 ou menos dependentes
+      yOffset += -6;
     }
 
-    if (hasDependents.length == 3) {
-      yOffset += 35; // Aumenta o yOffset se houver mais de 6 dependentes
+    if (dependents.filter(d => d.excluir).length === 3) {
+      yOffset += 35;
     } else {
-      yOffset += -6; // Aumenta o yOffset se houver 6 ou menos dependentes
+      yOffset += -6;
     }
 
-    if (hasDependents.length == 4) {
-      yOffset += 35; // Aumenta o yOffset se houver mais de 6 dependentes
+    if (dependents.filter(d => d.excluir).length === 4) {
+      yOffset += 35;
     } else {
-      yOffset += 7; // Aumenta o yOffset se houver 6 ou menos dependentes
+      yOffset += 7;
     }
 
-    if (hasDependents.length > 5) {
-      yOffset += 30; // Aumenta o yOffset se houver mais de 6 dependentes
+    if (dependents.filter(d => d.excluir).length > 5) {
+      yOffset += 30;
     } else {
-      yOffset += -8; // Aumenta o yOffset se houver 6 ou menos dependentes
+      yOffset += -8;
     }
 
-    // Additional information
     const additionalInfo = [
       "Rua: Corálio Soares de Oliveira, nº 497, Centro, João Pessoa – PB, CEP 58.013-260.",
       "Telefone: 3533-5310 - www.afrafepsaude.com.br  @afrafepsaude ",
       "CNPJ: 09.306.242/0001-82.",
     ];
 
-    // Set text color to blue
-    doc.setTextColor(105, 105, 105); // Cinza escuro (#696969)
+    doc.setTextColor(105, 105, 105);
     additionalInfo.forEach((line, index) => {
       const splitText = doc.splitTextToSize(line, 150);
       splitText.forEach((textLine) => {
         doc.text(textLine, 8, yOffset, { maxWidth: 190 });
-        yOffset += 5; // Reduced space between lines
+        yOffset += 5;
       });
-      // Add extra space only after the last line
       if (index === additionalInfo.length - 1) {
-        yOffset += 10; // You can adjust this value as needed
+        yOffset += 10;
       }
     });
 
-    // Adiciona a imagem no rodapé (direita)
-    const imgBase64 = rodape; // Substitua pelo Base64 real da imagem
-    const imgWidth = 40; // Ajuste conforme necessário
-    const imgHeight = 22; // Ajuste conforme necessário
-    // Certifique-se de que pageWidth já existe antes
+    const imgBase64 = rodape;
+    const imgWidth = 40;
+    const imgHeight = 22;
     const pageWidth2 = doc.internal.pageSize.width;
-
-    const xOffsetImage = pageWidth2 - imgWidth - 10; // Posição X (direita)
-    const yOffsetImage = doc.internal.pageSize.height - imgHeight - 10; // Posição Y (rodapé)
+    const xOffsetImage = pageWidth2 - imgWidth - 10;
+    const yOffsetImage = doc.internal.pageSize.height - imgHeight - 10;
 
     doc.addImage(
       imgBase64,
@@ -693,39 +685,106 @@ useEffect(() => {
       imgHeight
     );
 
-    // Reset text color to black
     doc.setTextColor(0, 0, 0);
 
-    // Após gerar o conteúdo
-
-    const pdfBase64 = doc.output("datauristring"); // Gera o PDF em base64
-
-    // Salvar o PDF em base64 no estado
+    const pdfBase64 = doc.output("datauristring");
     setPdfBase64(pdfBase64);
 
-    // Gerar o PDF como Blob
     const pdfBlob = doc.output("blob");
-
-    // Gerar a URL do Blob
     const pdfUrl = URL.createObjectURL(pdfBlob);
-
-    // Atualizar o estado com a URL do Blob
-    setPdfUrl(pdfUrl); // Supondo que você tenha um estado para armazenar a URL
-
-    // Abrir o modal para exibir o PDF
+    setPdfUrl(pdfUrl);
     setIsModalOpen(true);
-
-    // Atualizar o estado para mostrar o PDF
     setDetalhe(true);
 
-    // Save the document
-    const pdfFilename = hasDependents
+    const pdfFilename = (dependentsToExclude.length > 0 || excludeAll)
       ? `Termo_de_ciencia_Exclusao_${beneficiaryName}_dependentes.pdf`
       : `Termo_de_ciencia_Exclusao_${beneficiaryName}.pdf`;
 
-    // Salvar o documento
-    /*     doc.save(pdfFilename);
-     */
+    doc.save(pdfFilename);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const confirmed = await confirmExclusion();
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const dependentsToExclude = excludeAll ? dependents : (excludeFinancialDependent ? [] : dependents.filter(d => d.excluir));
+      
+      const tp_exclusao =
+        excludeAll ? 1
+          : excludeFinancialDependent ? 2
+          : dependentsToExclude.length > 0 ? 3
+          : 1;
+
+      const response = await fetch(
+        "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios/salvar",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            beneficiaryName,
+            registrationCode,
+            cpf,
+            code,
+            tp_exclusao,
+            dependents: dependentsToExclude,
+            excludeAll,
+            excludeFinancialDependent,
+            isAllChecked
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Erro ao salvar os dados");
+      }
+
+      toast.success("Exclusão realizada com sucesso! Voltando...", {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      
+      generatePDF();
+      
+      setExcludeAll(false);
+      setExcludeFinancialDependent(false);
+      setHasDependents(false);
+      setDependents([]);
+      setIsAllChecked(false);
+      
+      setIsSubmitting(false);
+      
+      setTimeout(() => {
+        navigate(-1);
+      }, 2000);
+      
+    } catch (error) {
+      console.error("Erro:", error);
+      toast.error("Erro ao realizar exclusão. Tente novamente.", {
+        position: "top-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -771,7 +830,6 @@ useEffect(() => {
                 />
               </div>
 
-              {/* Campo: Matrícula */}
               <div className="form-group mb-4 flex space-x-4">
                 <div className="w-1/2">
                   <label className="font-semibold">Matrícula:</label>
@@ -783,7 +841,6 @@ useEffect(() => {
                   />
                 </div>
 
-                {/* Campo: CPF */}
                 <div className="w-1/2">
                   <label className="font-semibold">CPF:</label>
                   <InputMask
@@ -860,121 +917,26 @@ useEffect(() => {
               )}
             </motion.div>
 
-            {/* Lista de Dependentes */}
-            {(dependents.length > 0 || savedDependents.length > 0) &&
-              !excludeAll && (
-                <div className="form-group mb-4">
-                  <motion.label
-                    className="flex items-center cursor-pointer mb-3"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {/* Exibe o checkbox se 'excludeFinancialDependent' for falso e 'isAllChecked' for falso */}
-                    {!excludeFinancialDependent && (
-                      <>
-                        <input
-                          type="checkbox"
-                          className="hidden"
-                          checked={isAllChecked}
-                          onChange={handleCheckboxChange}
-                        />
-                        <span
-                          className={`flex items-center justify-center w-6 h-6 border-2 
-                          ${
-                            isAllChecked
-                              ? "bg-black text-white border-black"
-                              : "bg-white border-black"
-                          }
-                          rounded transition-all duration-200 hover:border-gray-600 hover:shadow-lg`}
-                        >
-                          {isAllChecked && "✓"}
-                        </span>
-                        <span
-                          className="ml-2 text-black-800 bg-white rounded p-1 cursor-pointer"
-                          onClick={() => handleCheckboxChange()} // Ao clicar no texto, altera o estado do checkbox
-                        >
-                          Excluir todos os dependentes
-                        </span>
-                      </>
-                    )}
-                  </motion.label>
-                  {!excludeAll && !excludeFinancialDependent && (
-                    <div
-                      className="flex items-center mb-2 cursor-pointer"
-                      onClick={() => setChecked(!checked)}
-                    >
-                      <span className="ml-2 text-black-800 bg-white rounded p-1 cursor-default">
-                        Obs: Para manter algum dependente, clique em "Remover"
-                        apenas nele; os demais serão excluídos.
-                      </span>
-                    </div>
-                  )}
-                  <ul className="list-disc ml-6 space-y-2">
-                    {(dependents.length > 0 ? dependents : savedDependents).map(
-                      (dependent, index) => (
-                        <motion.li
-                          key={index}
-                          className="flex items-center justify-between bg-gray-100 p-2 rounded-md shadow-sm"
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                        >
-                          {dependent.nome}
-                          {!excludeAll && hasDependents && (
-                            <button
-                              className="ml-3 bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-all"
-                              type="button"
-                              onClick={() => removeDependent(index)}
-                            >
-                              Remover
-                            </button>
-                          )}
-                        </motion.li>
-                      )
-                    )}
-
-                    {/* Seletor para adicionar dependentes */}
-                    {!excludeAll && filteredAvailableDependents.length > 0 && (
-                      <div className="mt-3">
-                        <label className="block font-semibold mb-2">
-                          Adicionar Dependente:
-                        </label>
-                        <select
-                          className="border-b border-gray-400 focus:outline-none focus:border-blue-500 w-full sm:w-auto p-2 rounded"
-                          value={newDependent}
-                          onChange={(e) =>
-                            handleDependentChange(e.target.value)
-                          }
-                        >
-                          <option value="">Selecione um dependente</option>
-                          {filteredAvailableDependents.map((dep, index) => (
-                            <option key={index} value={JSON.stringify(dep)}>
-                              {dep.nome}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </ul>
-                </div>
-              )}
+            {/* Seção de Dependentes com novo layout */}
+            {renderDependentsSection()}
 
             {/* Botão de envio */}
-            <motion.button
-              type="submit"
-              className={`w-full py-2 rounded text-white transition-all ${
-                isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600"
-              }`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Enviando..." : "Salvar"}
-            </motion.button>
+            {hasExclusionSelected() && (
+              <motion.button
+                type="submit"
+                className={`w-full py-2 rounded text-white transition-all ${
+                  isSubmitting
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Enviando..." : "Salvar"}
+              </motion.button>
+            )}
           </motion.form>
         </div>
       </div>
