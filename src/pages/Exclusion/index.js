@@ -66,19 +66,22 @@ function App() {
         }
 
         const titularResponse = await axios.get(
-          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
+          formsUrl(`/beneficiarios/cpf/${chaveUnica}`),
           {
             headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
-        if (titularResponse.data && titularResponse.data.data) {
-          const {
-            codigo: code = "",
-            nome: beneficiaryName = "",
-            matricula: registrationCode = "",
-            cpf: titularCpf = "",
-          } = titularResponse.data.data;
+        if (
+          titularResponse.data &&
+          Array.isArray(titularResponse.data.data) &&
+          titularResponse.data.data.length > 0
+        ) {
+          const titularData = titularResponse.data.data[0];
+          const code = titularData.CD_BENEFICIARIO;
+          const beneficiaryName = titularData.NM_BENEFICIARIO;
+          const registrationCode = titularData.CD_MATRICULA;
+          const titularCpf = titularData.NU_CPF;
 
           setCode(code);
           setBeneficiaryName(beneficiaryName);
@@ -86,24 +89,24 @@ function App() {
           setCpf(titularCpf);
 
           const dependentesResponse = await axios.get(
-            formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}/dependentes`),
+            formsUrl(`/beneficiarios/matricula/${registrationCode}/dependentes`),
             {
               headers: getBearerHeaders(CHAVE_TOKEN),
             }
           );
 
-          if (dependentesResponse.data && dependentesResponse.data.data) {
-            const { dependentes = [] } = dependentesResponse.data.data;
-            
+          if (dependentesResponse.data && Array.isArray(dependentesResponse.data.data)) {
+            const dependentes = dependentesResponse.data.data;
+
             const hasDeps = dependentes.length > 0;
-            
+
             const formattedDependents = dependentes.map((dependent) => ({
-              nome: dependent.nome,
-              cpf: dependent.cpf,
-              codigo: dependent.codigo,
-              cns: dependent.cns,
-              nmMae: dependent.nmMae,
-              dtNascimento: dependent.dtNascimento,
+              nome: dependent.NM_BENEFICIARIO,
+              cpf: dependent.NU_CPF,
+              codigo: dependent.CD_BENEFICIARIO,
+              cns: "",
+              nmMae: "",
+              dtNascimento: dependent.DT_NASCIMENTO,
               nmBeneficiario_titular: beneficiaryName,
               nuCpf_titular: titularCpf,
               excluir: false

@@ -21,7 +21,7 @@ const BeneficiaryDashboard = () => {
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || "";
 
-  const [beneficiaryName, setBeneficiaryName] = useState("Beneficiário");
+  const [beneficiaryName, setBeneficiaryName] = useState("BeneficiÃ¡rio");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [tipoDependente, setTipoDependente] = useState("");
@@ -77,28 +77,43 @@ const BeneficiaryDashboard = () => {
         }
 
         const secondResponse = await axios.get(
-          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
+          formsUrl(`/beneficiarios/cpf/${chaveUnica}`),
           {
             headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
-        const beneficiaryData = secondResponse.data?.data;
+        const rawResponseData = secondResponse.data?.data;
+        const beneficiaryData = Array.isArray(rawResponseData)
+          ? rawResponseData[0]
+          : rawResponseData;
+
         if (!beneficiaryData) {
           throw new Error("Nenhum dado valido recebido.");
         }
 
-        setBeneficiaryName(beneficiaryData.nome || "Beneficiário");
-        setTipoDependente(beneficiaryData.tipoDependente || "");
-        setPlanoInterno(beneficiaryData.planoInterno || null);
+        const beneficiaryName =
+          beneficiaryData.NM_BENEFICIARIO ||
+          beneficiaryData.nome ||
+          "BeneficiÃ¡rio";
+        const tipoDependenteValue =
+          beneficiaryData.DS_TIPO_DEPENDENTE || beneficiaryData.tipoDependente || "";
+        const planoInternoValue =
+          beneficiaryData.CD_PLANO_INTERNO ?? beneficiaryData.planoInterno ?? null;
+
+        setBeneficiaryName(beneficiaryName);
+        setTipoDependente(tipoDependenteValue);
+        setPlanoInterno(
+          planoInternoValue !== null ? Number(planoInternoValue) : null
+        );
         localStorage.setItem(
           "afrafep_beneficiary_name",
-          beneficiaryData.nome || "Beneficiário"
+          beneficiaryName
         );
       } catch (error) {
-        console.error("Erro ao buscar dados do beneficiário:", error);
+        console.error("Erro ao buscar dados do beneficiÃ¡rio:", error);
         setLoginError(
-          "Erro ao buscar dados do beneficiário. Por favor, tente novamente."
+          "Erro ao buscar dados do beneficiÃ¡rio. Por favor, tente novamente."
         );
       } finally {
         setIsLoading(false);
@@ -116,17 +131,17 @@ const BeneficiaryDashboard = () => {
     },
     {
       path: `/Adesao/?chavePasse=${chavePasse}`,
-      label: "Adesão",
+      label: "AdesÃ£o",
       icon: <BsFillPersonFill size={24} />,
     },
     {
       path: `/Exclusao/?chavePasse=${chavePasse}`,
-      label: "Exclusão",
+      label: "ExclusÃ£o",
       icon: <BsFillTrashFill size={24} />,
     },
     {
       path: `/Solicitacoes/?chavePasse=${chavePasse}`,
-      label: "Acompanhar solicitações",
+      label: "Acompanhar solicitaÃ§Ãµes",
       icon: <BsClipboard2Data size={24} color="white" />,
       buttonClass: "bg-green-500",
     },
@@ -163,7 +178,7 @@ const BeneficiaryDashboard = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-2xl sm:text-3xl font-extrabold text-black">
-              Olá, {beneficiaryName}!
+              OlÃ¡, {beneficiaryName}!
             </h1>
           </motion.div>
 
@@ -200,7 +215,7 @@ const BeneficiaryDashboard = () => {
                 transition={{ duration: 0.8 }}
               >
                 <h2 className="text-3xl sm:text-2xl font-semibold text-gray-300">
-                  O que você gostaria de fazer hoje?
+                  O que vocÃª gostaria de fazer hoje?
                 </h2>
               </motion.div>
 
@@ -246,9 +261,9 @@ const BeneficiaryDashboard = () => {
                   </svg>
                 </div>
                 <p className="text-gray-700 text-base leading-relaxed">
-                  Este serviço é <span className="font-semibold text-red-700">exclusivo</span>{" "}
+                  Este serviÃ§o Ã© <span className="font-semibold text-red-700">exclusivo</span>{" "}
                   para os <span className="font-bold text-blue-700">titulares</span> do plano{" "}
-                  <span className="font-bold text-red-700">Afrafep Saúde Plus</span>.
+                  <span className="font-bold text-red-700">Afrafep SaÃºde Plus</span>.
                 </p>
               </div>
             </motion.div>

@@ -27,8 +27,20 @@ function App() {
         setResponseData({ data: { chaveUnica } });
 
         if (chaveUnica) {
+          const titularResponse = await axios.get(
+            formsUrl(`/beneficiarios/cpf/${chaveUnica}`)
+          );
+
+          const titularData = titularResponse.data?.data?.[0];
+          const matricula = titularData?.CD_MATRICULA;
+
+          if (!matricula) {
+            setSecondError("Matrícula não encontrada na consulta por CPF.");
+            return;
+          }
+
           const dependentesResponse = await axios.get(
-            formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`)
+            formsUrl(`/beneficiarios/matricula/${matricula}/dependentes`)
           );
           setDependentesData(dependentesResponse.data);
         } else {
@@ -61,7 +73,7 @@ function App() {
           <p>Carregando...</p>
         )}
 
-        <strong>Resposta do Segundo GET:</strong>
+        <strong>Resposta do Segundo GET (Dependentes):</strong>
         {secondError ? (
           <p style={{ color: "red" }}>Erro do Segundo GET: {secondError}</p>
         ) : dependentesData ? (

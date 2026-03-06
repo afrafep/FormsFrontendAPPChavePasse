@@ -12,7 +12,6 @@
     "bootstrap": "^5.3.3",
     "framer-motion": "^11.11.11",
     "js-cookie": "^3.0.5",
-    "json-server": "^0.17.4",
     "jspdf": "^4.2.0",
     "mdb-react-ui-kit": "^5.1.0",
     "pdfjs-dist": "^3.11.174",
@@ -29,6 +28,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "dev": "react-scripts start",
     "server": "json-server --port 4000 --watch data/db.json",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -56,7 +56,6 @@
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^18.13.0",
     "@types/react-dom": "^18.0.10",
-    "@types/react-input-mask": "^3.0.5",
     "tailwindcss": "^3.2.6",
     "typescript": "^4.9.5"
   }

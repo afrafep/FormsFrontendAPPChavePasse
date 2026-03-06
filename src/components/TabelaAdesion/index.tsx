@@ -114,38 +114,59 @@ const Tabela: React.FC = () => {
         }
 
         const secondResponse = await axios.get(
-          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
+          formsUrl(`/beneficiarios/cpf/${chaveUnica}`),
           {
             headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
-        if (secondResponse.data && secondResponse.data.data) {
-          // Armazena todos os dados do titular
-          setTitularData(secondResponse.data.data);
+        if (
+          secondResponse.data &&
+          Array.isArray(secondResponse.data.data) &&
+          secondResponse.data.data.length > 0
+        ) {
+          const titularApiData = secondResponse.data.data[0];
+          const mappedTitularData: TitularData = {
+            cdBeneficiario: titularApiData.CD_BENEFICIARIO,
+            tipoDependente: titularApiData.DS_TIPO_DEPENDENTE,
+            codigo: titularApiData.CD_BENEFICIARIO,
+            nome: titularApiData.NM_BENEFICIARIO,
+            cpf: titularApiData.NU_CPF,
+            matricula: titularApiData.CD_MATRICULA,
+            celular: titularApiData.CELULAR,
+            email: titularApiData.EMAIL,
+            nmMae: "",
+            dtNascimento: titularApiData.DT_NASCIMENTO,
+            cns: "",
+            formaPagamento: titularApiData.CD_FORMA_PAGAMENTO,
+            rg: titularApiData.NU_RG,
+            orgaoRg: titularApiData.CD_ORGAO_RG,
+            ufRg: titularApiData.CD_UF_RG,
+            logradouro: titularApiData.DS_LOGRADOURO,
+            numero: titularApiData.NU_NUMERO,
+            complemento: titularApiData.DS_COMPLEMENTO,
+            cidade: titularApiData.NM_CIDADE,
+            bairro: titularApiData.NM_BAIRRO,
+            uf: titularApiData.CD_UF,
+            cep: titularApiData.CD_CEP,
+            telefone: null,
+            titular: 1,
+            formaEnvio: titularApiData.DS_FORMA_ENVIO,
+            sexo: titularApiData.FL_SEXO,
+          };
+
+          // Armazena todos os dados do titular no formato interno da tela
+          setTitularData(mappedTitularData);
 
           const {
-            nome: beneficiaryName = "",
-            cpf: beneficiaryCpf = "",
-            matricula: registrationCode = "",
-            sexo: sexo = "",
-            celular: telefones = "",
-            email: email = "",
-            formaPagamento: pagamento = "",
-            nmMae: nomeMae = "",
-            dtNascimento: dataNascimento = "",
-            cns: cartaoSus = "",
-            rg: rg = "",
-            orgaoRg: orgaoEmissor = "",
-            ufRg: ufRg = "",
-            logradouro: logradouro = "",
-            numero: numero = 0,
-            complemento: complemento = "",
-            bairro: bairro = "",
-            cidade: cidade = "",
-            uf: uf = "",
-            cep: cep = "",
-          } = secondResponse.data.data;
+            nome: beneficiaryName,
+            cpf: beneficiaryCpf,
+            matricula: registrationCode,
+            sexo,
+            celular: telefones,
+            email,
+            formaPagamento: pagamento,
+          } = mappedTitularData;
 
           setTitular(beneficiaryName);
           setCpf(beneficiaryCpf);

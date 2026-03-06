@@ -151,20 +151,23 @@ useEffect(() => {
       if (chaveUnica) {
         // PRIMEIRO: Busca os dados do TITULAR usando a chaveUnica
         const titularResponse = await axios.get(
-          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
+          formsUrl(`/beneficiarios/cpf/${chaveUnica}`),
           {
             headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
         // Verifica se a resposta contém dados válidos do TITULAR
-        if (titularResponse.data && titularResponse.data.data) {
-          const {
-            codigo: code = "",
-            nome: beneficiaryName = "",
-            matricula: registrationCode = "",
-            cpf: titularCpf = "",
-          } = titularResponse.data.data;
+        if (
+          titularResponse.data &&
+          Array.isArray(titularResponse.data.data) &&
+          titularResponse.data.data.length > 0
+        ) {
+          const titularData = titularResponse.data.data[0];
+          const code = titularData.CD_BENEFICIARIO;
+          const beneficiaryName = titularData.NM_BENEFICIARIO;
+          const registrationCode = titularData.CD_MATRICULA;
+          const titularCpf = titularData.NU_CPF;
 
           setCode(code);
           setBeneficiaryName(beneficiaryName);
@@ -173,25 +176,25 @@ useEffect(() => {
 
           // SEGUNDO: Busca os DEPENDENTES do titular
           const dependentesResponse = await axios.get(
-            formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}/dependentes`),
+            formsUrl(`/beneficiarios/matricula/${registrationCode}/dependentes`),
             {
               headers: getBearerHeaders(CHAVE_TOKEN),
             }
           );
 
           // Verifica se a resposta contém dados válidos de DEPENDENTES
-          if (dependentesResponse.data && dependentesResponse.data.data) {
-            const { dependentes = [] } = dependentesResponse.data.data;
+          if (dependentesResponse.data && Array.isArray(dependentesResponse.data.data)) {
+            const dependentes = dependentesResponse.data.data;
 
             setHasDependents(dependentes.length > 0);
             setDependents(
               dependentes.map((dependent) => ({
-                nome: dependent.nome,
-                cpf: dependent.cpf,
-                codigo: dependent.codigo,
-                cns: dependent.cns,
-                nmMae: dependent.nmMae,
-                dtNascimento: dependent.dtNascimento,
+                nome: dependent.NM_BENEFICIARIO,
+                cpf: dependent.NU_CPF,
+                codigo: dependent.CD_BENEFICIARIO,
+                cns: "",
+                nmMae: "",
+                dtNascimento: dependent.DT_NASCIMENTO,
               }))
             );
           }
