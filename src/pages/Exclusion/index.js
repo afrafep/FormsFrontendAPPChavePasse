@@ -13,6 +13,13 @@ import Menu from "../../components/Menu/Menu";
 import { motion } from "framer-motion";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import Swal from "sweetalert2";
+import {
+  CHAVE_TOKEN,
+  MOCK_CPF,
+  formsUrl,
+  getBearerHeaders,
+  getChaveUnica,
+} from "../../services/api";
 
 function App() {
   const navigate = useNavigate();
@@ -34,10 +41,6 @@ function App() {
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || "";
 
-  const chaveFunc = "7a516ed5-1ae8-4980-abd4-f4c033027e26";
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
-
   // Fetch dos dados do beneficiário
   useEffect(() => {
     const fetchBeneficiaryData = async () => {
@@ -45,27 +48,16 @@ function App() {
         const queryParams = new URLSearchParams(window.location.search);
         const chavePasse = queryParams.get("chavePasse") || "";
 
-        if (!chavePasse) {
+        if (!chavePasse && !MOCK_CPF) {
           console.error("Chave Passe não foi fornecida na URL.");
           setLoginError("Chave Passe não encontrada na URL.");
           return;
         }
 
-        const response = await axios.get(
-          `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
-          {
-            params: {
-              chavePasse,
-              chaveFuncionalidade: chaveFunc,
-            },
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `${token}`,
-            },
-          }
-        );
-
-        const chaveUnica = response.data?.data?.chaveUnica;
+        const chaveUnica = await getChaveUnica(chavePasse, {
+          preferCache: true,
+          allowFetch: true,
+        });
 
         if (!chaveUnica) {
           console.error("Chave Unica não encontrada na resposta.");
@@ -74,11 +66,9 @@ function App() {
         }
 
         const titularResponse = await axios.get(
-          `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
+          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
@@ -96,11 +86,9 @@ function App() {
           setCpf(titularCpf);
 
           const dependentesResponse = await axios.get(
-            `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}/dependentes`,
+            formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}/dependentes`),
             {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              headers: getBearerHeaders(CHAVE_TOKEN),
             }
           );
 
@@ -137,7 +125,7 @@ function App() {
     };
 
     fetchBeneficiaryData();
-  }, [chavePasse, chaveFunc, token]);
+  }, [chavePasse]);
 
   const [isAllChecked, setIsAllChecked] = useState(false);
   const [excludeAll, setExcludeAll] = useState(false);
@@ -721,12 +709,12 @@ function App() {
           : 1;
 
       const response = await fetch(
-        "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios/salvar",
+        formsUrl("/exclusao/beneficiarios/salvar"),
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${CHAVE_TOKEN}`,
           },
           body: JSON.stringify({
             beneficiaryName,
@@ -945,3 +933,4 @@ function App() {
 }
 
 export default App;
+

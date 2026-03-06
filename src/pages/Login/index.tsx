@@ -8,6 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import logologin from "../../assets/logotela.avif";
 import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa"; // Importando os ícones
+import { formsUrl } from "../../services/api";
 
 const loginApi = async (
   username: string,
@@ -15,7 +16,7 @@ const loginApi = async (
 ): Promise<{ success: boolean; message: string; token?: string }> => {
   try {
     const response = await fetch(
-      "https://api.afrafepsaude.com.br/forms/Acess",
+      formsUrl("/Acess"),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

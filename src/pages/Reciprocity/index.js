@@ -11,6 +11,13 @@ import { motion } from "framer-motion";
 import Menu from "../../components/Menu/Menu";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import {
+  CHAVE_TOKEN,
+  MOCK_CPF,
+  formsUrl,
+  getBearerHeaders,
+  getChaveUnica,
+} from "../../services/api";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 function App() {
@@ -33,13 +40,6 @@ function App() {
 
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || ""; // Valor da URL ou string vazia
-
-  const chaveFunc = "7a516ed5-1ae8-4980-abd4-f4c033027e26";
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
-
-  /*   const chaveFunc = process.env.REACT_APP_CHAVE_FUNC;
-  const token = process.env.REACT_APP_CHAVE_TOKEN; */
 
   const [selectedUF, setSelectedUF] = useState("");
   const [destinationState, setDestinationState] = useState([]);
@@ -137,37 +137,23 @@ useEffect(() => {
       const queryParams = new URLSearchParams(window.location.search);
       const chavePasse = queryParams.get("chavePasse") || "";
 
-      if (!chavePasse) {
+      if (!chavePasse && !MOCK_CPF) {
         console.error("Chave Passe não foi fornecida na URL.");
         return;
       }
 
-      // Primeiro GET: busca informações do beneficiário usando chavePasse
-      const response = await axios.get(
-        `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
-        {
-          params: {
-            chavePasse,
-            chaveFuncionalidade: chaveFunc,
-          },
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `${token}`,
-          },
-        }
-      );
-
-      // Verifica se chaveUnica existe na resposta
-      const chaveUnica = response.data?.data?.chaveUnica;
+      // Usa cache da Home e faz fallback para não quebrar acesso direto
+      const chaveUnica = await getChaveUnica(chavePasse, {
+        preferCache: true,
+        allowFetch: true,
+      });
 
       if (chaveUnica) {
         // PRIMEIRO: Busca os dados do TITULAR usando a chaveUnica
         const titularResponse = await axios.get(
-          `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
+          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
@@ -187,11 +173,9 @@ useEffect(() => {
 
           // SEGUNDO: Busca os DEPENDENTES do titular
           const dependentesResponse = await axios.get(
-            `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}/dependentes`,
+            formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}/dependentes`),
             {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              headers: getBearerHeaders(CHAVE_TOKEN),
             }
           );
 
@@ -221,7 +205,7 @@ useEffect(() => {
   };
 
   fetchBeneficiaryData();
-}, [chavePasse, chaveFunc, token]); // Dependências para o useEffect
+}, [chavePasse]); // Dependências para o useEffect
 
 
   const [newDependent, setNewDependent] = React.useState("");
@@ -315,7 +299,7 @@ useEffect(() => {
     // Enviar os dados para o backend
     try {
       const response = await fetch(
-        "https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/salvar",
+        formsUrl("/reciprocidade/beneficiarios/salvar"),
         {
           method: "POST",
           headers: {
@@ -950,3 +934,4 @@ useEffect(() => {
 }
 
 export default App;
+

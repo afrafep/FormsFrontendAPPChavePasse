@@ -13,6 +13,7 @@ import logo from "../../../images/afrafep.png";
 import rodape from "../../../images/afrafeprodape.png";
 import assinatura from "../../Dashboard/assinatura.png";
 import Cookies from "js-cookie";
+import { formsUrl } from "../../../services/api";
 
 interface TableProps {
   data: any[];
@@ -72,7 +73,7 @@ const Table: React.FC<TableProps> = ({ data, activeTab }) => {
       return;
     }
 
-    fetch("https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios", {
+    fetch(formsUrl("/exclusao/beneficiarios"), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -161,16 +162,13 @@ const Table: React.FC<TableProps> = ({ data, activeTab }) => {
     let url = "";
     switch (activeTab) {
       case "adesao":
-        url =
-          "https://api.afrafepsaude.com.br/forms/adesaodash/beneficiarios/updated";
+        url = formsUrl("/adesaodash/beneficiarios/updated");
         break;
       case "reciprocidade":
-        url =
-          "https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/updated";
+        url = formsUrl("/reciprocidade/beneficiarios/updated");
         break;
       case "exclusao":
-        url =
-          "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios/updated";
+        url = formsUrl("/exclusao/beneficiarios/updated");
         break;
       default:
         console.error("Tab inválida:", activeTab);
@@ -231,8 +229,7 @@ const Table: React.FC<TableProps> = ({ data, activeTab }) => {
   ) => {
     setStatusLoading((prev) => ({ ...prev, [nuCpf]: true }));
 
-    const url =
-      "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios/updatedDependente";
+    const url = formsUrl("/exclusao/beneficiarios/updatedDependente");
     const token = Cookies.get("Frontend");
 
     if (!token) {

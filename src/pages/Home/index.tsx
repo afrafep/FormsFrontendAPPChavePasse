@@ -3,78 +3,102 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+  CHAVE_TOKEN,
+  MOCK_CPF,
+  fetchMosiaUserByChavePasse,
+  formsUrl,
+  getBearerHeaders,
+  getChaveUnica,
+} from "../../services/api";
+import {
   BsClipboard2Data,
   BsFillCheckCircleFill,
   BsFillPersonFill,
   BsFillTrashFill,
-} from "react-icons/bs"; // Ãcones
+} from "react-icons/bs";
 
 const BeneficiaryDashboard = () => {
   const queryParams = new URLSearchParams(window.location.search);
-  const chavePasse = queryParams.get("chavePasse") || ""; // Valor da URL ou string vazia
-  
-  const chaveFunc = "7a516ed5-1ae8-4980-abd4-f4c033027e26";
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
+  const chavePasse = queryParams.get("chavePasse") || "";
 
-  const [beneficiaryName, setBeneficiaryName] = useState("BeneficiÃ¡rio");
+  const [beneficiaryName, setBeneficiaryName] = useState("Beneficiário");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-
   const [tipoDependente, setTipoDependente] = useState("");
   const [planoInterno, setPlanoInterno] = useState<number | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  const isDevEnvironment =
+    (process.env.REACT_APP_ENVIRONMENT || "").toLowerCase() === "dev";
 
   useEffect(() => {
     const fetchBeneficiaryData = async () => {
       try {
-        if (!chavePasse) {
-          setLoginError("Chave Passe nÃ£o fornecida na URL.");
-          setIsLoading(false);
-          return;
+        let mosiaResult: any = null;
+        let chaveUnica = "";
+
+        if (isDevEnvironment && chavePasse && !MOCK_CPF) {
+          try {
+            mosiaResult = await fetchMosiaUserByChavePasse(chavePasse);
+            chaveUnica = mosiaResult?.data?.chaveUnica || "";
+          } catch (error: any) {
+            mosiaResult = {
+              error:
+                error?.response?.data ||
+                error?.message ||
+                "Erro ao consultar Mosia",
+            };
+          }
         }
 
-        // Primeiro GET: busca informaÃ§Ãµes do beneficiÃ¡rio usando chavePasse
-        const response = await axios.get(
-          `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
+        if (!chaveUnica) {
+          chaveUnica = await getChaveUnica(chavePasse, {
+            preferCache: true,
+            allowFetch: true,
+          });
+        }
+
+        if (isDevEnvironment) {
+          setDebugInfo({
+            chavePasseFromUrl: chavePasse || "",
+            chaveUnicaUsed: chaveUnica || "",
+            token: CHAVE_TOKEN || "",
+            mockCpf: MOCK_CPF || "",
+            mosiaResult:
+              mosiaResult ??
+              (MOCK_CPF
+                ? { info: "Mock ativo: consulta Mosia nao executada." }
+                : null),
+          });
+        }
+
+        if (!chaveUnica) {
+          throw new Error("Chave unica nao encontrada.");
+        }
+
+        const secondResponse = await axios.get(
+          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
           {
-            params: {
-              chavePasse,
-              chaveFuncionalidade: chaveFunc,
-            },
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: token,
-            },
+            headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
-        const chaveUnica = response.data?.data?.chaveUnica;
-
-        if (chaveUnica) {
-          // Segundo GET: busca dados completos do beneficiÃ¡rio
-          const secondResponse = await axios.get(
-            `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          const beneficiaryData = secondResponse.data?.data;
-          if (beneficiaryData) {
-            setBeneficiaryName(beneficiaryData.nome || "BeneficiÃ¡rio");
-            setTipoDependente(beneficiaryData.tipoDependente || "");
-            setPlanoInterno(beneficiaryData.planoInterno || null);
-          } else {
-            throw new Error("Nenhum dado vÃ¡lido recebido.");
-          }
-        } else {
-          throw new Error("Chave Ãšnica nÃ£o encontrada.");
+        const beneficiaryData = secondResponse.data?.data;
+        if (!beneficiaryData) {
+          throw new Error("Nenhum dado valido recebido.");
         }
+
+        setBeneficiaryName(beneficiaryData.nome || "Beneficiário");
+        setTipoDependente(beneficiaryData.tipoDependente || "");
+        setPlanoInterno(beneficiaryData.planoInterno || null);
+        localStorage.setItem(
+          "afrafep_beneficiary_name",
+          beneficiaryData.nome || "Beneficiário"
+        );
       } catch (error) {
-        console.error("Erro ao buscar dados do beneficiÃ¡rio:", error);
+        console.error("Erro ao buscar dados do beneficiário:", error);
         setLoginError(
-          "Erro ao buscar dados do beneficiÃ¡rio. Por favor, tente novamente."
+          "Erro ao buscar dados do beneficiário. Por favor, tente novamente."
         );
       } finally {
         setIsLoading(false);
@@ -82,7 +106,7 @@ const BeneficiaryDashboard = () => {
     };
 
     fetchBeneficiaryData();
-  }, [chavePasse, chaveFunc, token]);
+  }, [chavePasse, isDevEnvironment]);
 
   const options = [
     {
@@ -92,24 +116,23 @@ const BeneficiaryDashboard = () => {
     },
     {
       path: `/Adesao/?chavePasse=${chavePasse}`,
-      label: "AdesÃ£o",
+      label: "Adesão",
       icon: <BsFillPersonFill size={24} />,
     },
     {
       path: `/Exclusao/?chavePasse=${chavePasse}`,
-      label: "ExclusÃ£o",
+      label: "Exclusão",
       icon: <BsFillTrashFill size={24} />,
     },
     {
       path: `/Solicitacoes/?chavePasse=${chavePasse}`,
-      label: "Acompanhar solicitaÃ§Ãµes",
+      label: "Acompanhar solicitações",
       icon: <BsClipboard2Data size={24} color="white" />,
       buttonClass: "bg-green-500",
     },
   ];
 
-  const isTitularPlus =
-    tipoDependente === "TITULAR" && planoInterno === 60;
+  const isTitularPlus = tipoDependente === "TITULAR" && planoInterno === 60;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-white-900 to-white text-white px-4 sm:px-8">
@@ -140,9 +163,33 @@ const BeneficiaryDashboard = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-2xl sm:text-3xl font-extrabold text-black">
-              OlÃ¡, {beneficiaryName}!
+              Olá, {beneficiaryName}!
             </h1>
           </motion.div>
+
+          {isDevEnvironment && (
+            <div className="w-full max-w-4xl mt-6 p-4 rounded-lg border border-yellow-500 bg-yellow-50 text-black text-left">
+              <h3 className="font-bold mb-2">Debug Home (ambiente DEV)</h3>
+              <p>
+                <b>chavePasse (URL):</b> {debugInfo?.chavePasseFromUrl || "(vazio)"}
+              </p>
+              <p>
+                <b>chaveUnica usada:</b> {debugInfo?.chaveUnicaUsed || "(vazio)"}
+              </p>
+              <p>
+                <b>mockCpf:</b> {debugInfo?.mockCpf || "(vazio)"}
+              </p>
+              <p className="break-all">
+                <b>token:</b> {debugInfo?.token || "(vazio)"}
+              </p>
+              <p className="mt-2">
+                <b>resultado Mosia:</b>
+              </p>
+              <pre className="bg-white p-2 rounded border text-xs overflow-auto max-h-72">
+                {JSON.stringify(debugInfo?.mosiaResult, null, 2)}
+              </pre>
+            </div>
+          )}
 
           {isTitularPlus ? (
             <>
@@ -153,7 +200,7 @@ const BeneficiaryDashboard = () => {
                 transition={{ duration: 0.8 }}
               >
                 <h2 className="text-3xl sm:text-2xl font-semibold text-gray-300">
-                  O que vocÃª gostaria de fazer hoje?
+                  O que você gostaria de fazer hoje?
                 </h2>
               </motion.div>
 
@@ -176,7 +223,7 @@ const BeneficiaryDashboard = () => {
               </motion.div>
             </>
           ) : (
-           <motion.div
+            <motion.div
               className="mt-10 w-full max-w-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -199,15 +246,9 @@ const BeneficiaryDashboard = () => {
                   </svg>
                 </div>
                 <p className="text-gray-700 text-base leading-relaxed">
-                  Este serviÃ§o Ã©{" "}
-                  <span className="font-semibold text-red-700">exclusivo</span>{" "}
-                  para os{" "}
-                  <span className="font-bold text-blue-700">titulares</span> do
-                  plano{" "}
-                  <span className="font-bold text-red-700">
-                    Afrafep SaÃºde Plus
-                  </span>
-                  .
+                  Este serviço é <span className="font-semibold text-red-700">exclusivo</span>{" "}
+                  para os <span className="font-bold text-blue-700">titulares</span> do plano{" "}
+                  <span className="font-bold text-red-700">Afrafep Saúde Plus</span>.
                 </p>
               </div>
             </motion.div>

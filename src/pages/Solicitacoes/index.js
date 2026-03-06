@@ -19,6 +19,13 @@ import {
   FaMapMarkerAlt,
 } from "react-icons/fa";
 import ReactPaginate from "react-paginate";
+import {
+  CHAVE_TOKEN,
+  MOCK_CPF,
+  formsUrl,
+  getBearerHeaders,
+  getChaveUnica,
+} from "../../services/api";
 
 function App() {
   const navigate = useNavigate();
@@ -31,9 +38,6 @@ function App() {
 
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || "";
-  const chaveFunc = "7a516ed5-1ae8-4980-abd4-f4c033027e26";
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
 
   // Função para formatar data
   const formatDate = (dateString) => {
@@ -95,23 +99,15 @@ function App() {
   useEffect(() => {
     const fetchBeneficiaryData = async () => {
       try {
-        if (!chavePasse) {
+        if (!chavePasse && !MOCK_CPF) {
           setLoginError("Chave Passe não encontrada na URL.");
           return;
         }
 
-        const response = await axios.get(
-          "https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario",
-          {
-            params: { chavePasse, chaveFuncionalidade: chaveFunc },
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: token,
-            },
-          }
-        );
-
-        const chaveUnica = response.data?.data?.chaveUnica;
+        const chaveUnica = await getChaveUnica(chavePasse, {
+          preferCache: true,
+          allowFetch: true,
+        });
         if (!chaveUnica) {
           setLoginError("Erro ao obter chave única do beneficiário.");
           return;
@@ -125,15 +121,12 @@ function App() {
           "dependente-reciprocidade",
           "exclusao-titulares",
           "exclusao-dependente",
-        ].map(
-          (path) =>
-            `https://api.afrafepsaude.com.br/forms/solicitacoes/${path}/${chaveUnica}`
-        );
+        ].map((path) => formsUrl(`/solicitacoes/${path}/${chaveUnica}`));
 
         const responses = await Promise.all(
           urls.map((url) =>
             axios
-              .get(url, { headers: { Authorization: `Bearer ${token}` } })
+              .get(url, { headers: getBearerHeaders(CHAVE_TOKEN) })
               .catch(() => null)
           )
         );
@@ -145,7 +138,7 @@ function App() {
 
         setDataResponses(responseData);
         setBeneficiaryName(
-          response.data?.data?.nome || "Beneficiário não encontrado."
+          localStorage.getItem("afrafep_beneficiary_name") || "Beneficiário"
         );
       } catch (error) {
         console.error("Erro ao buscar dados do beneficiário:", error);
@@ -334,3 +327,4 @@ function App() {
 }
 
 export default App;
+

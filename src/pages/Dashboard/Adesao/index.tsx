@@ -6,6 +6,7 @@ import { BsBoxArrowRight } from "react-icons/bs";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { formsUrl } from "../../../services/api";
 
 const Dashboard: React.FC = () => {
   const [search, setSearch] = useState<string>(""); // Campo de busca
@@ -183,7 +184,7 @@ const Dashboard: React.FC = () => {
         setReciprocidade([]); // Limpa reciprocidade quando mudando para adesão
         setExclusao([]); // Limpa exclusão quando mudando para adesão
         fetchBeneficiarios(
-          "https://api.afrafepsaude.com.br/forms/adesaodash/beneficiarios",
+          formsUrl("/adesaodash/beneficiarios"),
           setAdesao
         );
         break;
@@ -191,7 +192,7 @@ const Dashboard: React.FC = () => {
         setAdesao([]); // Limpa adesão quando mudando para reciprocidade
         setExclusao([]); // Limpa exclusão quando mudando para reciprocidade
         fetchReciprocidadeBeneficiarios(
-          "https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios",
+          formsUrl("/reciprocidade/beneficiarios"),
           setReciprocidade
         );
         break;
@@ -199,7 +200,7 @@ const Dashboard: React.FC = () => {
         setAdesao([]); // Limpa adesão quando mudando para exclusão
         setReciprocidade([]); // Limpa reciprocidade quando mudando para exclusão
         fetchExclusaoBeneficiarios(
-          "https://api.afrafepsaude.com.br/forms/exclusao/beneficiarios",
+          formsUrl("/exclusao/beneficiarios"),
           setExclusao,
           setNewUsersToday,
           "EXCLUSÃO" // <== Adicione este estado aqui

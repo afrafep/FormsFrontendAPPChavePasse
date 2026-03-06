@@ -8,6 +8,13 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  CHAVE_TOKEN,
+  MOCK_CPF,
+  formsUrl,
+  getBearerHeaders,
+  getChaveUnica,
+} from "../../services/api";
 
 interface Dependent {
   nome: string;
@@ -88,36 +95,18 @@ const Tabela: React.FC = () => {
   const queryParams = new URLSearchParams(window.location.search);
   const chavePasse = queryParams.get("chavePasse") || ""; // Valor da URL ou string vazia
 
-  const chaveFunc = "7a516ed5-1ae8-4980-abd4-f4c033027e26";
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlzIjoiY2hhdmVQYXNzZSIsImtleSI6IjVjZDg2OThhLTllNzYtNDIwYy04MTJiLTc1ODZiMmQ5OTc2NiIsImlhdCI6MTczMzc1MDc2NiwiZXhwIjozMzExNjMwNzY2LCJhdWQiOiJhbGwifQ.pnMRmFnTk685RBuf2kpsly7Pmxam5SjjFoePUMFL0cQ";
-
-  /*  const chaveFunc = process.env.REACT_APP_CHAVE_FUNC;
-  const token = process.env.REACT_APP_CHAVE_TOKEN; */
-
   useEffect(() => {
     const fetchBeneficiaryData = async () => {
       try {
-        if (!chavePasse) {
+        if (!chavePasse && !MOCK_CPF) {
           console.error("Chave Passe não foi fornecida na URL.");
           return;
         }
 
-        const response = await axios.get(
-          `https://api.mosiaomnichannel.com.br/clientes/chavePasse/usuario`,
-          {
-            params: {
-              chavePasse,
-              chaveFuncionalidade: chaveFunc,
-            },
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `${token}`,
-            },
-          }
-        );
-
-        const chaveUnica = response.data?.data?.chaveUnica;
+        const chaveUnica = await getChaveUnica(chavePasse, {
+          preferCache: true,
+          allowFetch: true,
+        });
 
         if (!chaveUnica) {
           console.error("Chave Unica não encontrada na resposta.");
@@ -125,11 +114,9 @@ const Tabela: React.FC = () => {
         }
 
         const secondResponse = await axios.get(
-          `https://api.afrafepsaude.com.br/forms/reciprocidade/beneficiarios/${chaveUnica}`,
+          formsUrl(`/reciprocidade/beneficiarios/${chaveUnica}`),
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: getBearerHeaders(CHAVE_TOKEN),
           }
         );
 
@@ -176,7 +163,7 @@ const Tabela: React.FC = () => {
     };
 
     fetchBeneficiaryData();
-  }, [chavePasse, chaveFunc, token]);
+  }, [chavePasse]);
 
   const addDependent = () => {
     setDependents([
@@ -245,7 +232,7 @@ const Tabela: React.FC = () => {
       try {
         // Monta a URL com CPF e RG do dependente
         const response = await fetch(
-          `https://api.afrafepsaude.com.br/forms/adesao/${dependentToRemove.cpf}`,
+          formsUrl(`/adesao/${dependentToRemove.cpf}`),
           {
             method: "DELETE",
             headers: {
@@ -798,7 +785,7 @@ const Tabela: React.FC = () => {
         setIsButtonDisabled(false);
       }, 180000); // 180.000 ms = 3 minutos
       const response = await fetch(
-        "https://api.afrafepsaude.com.br/forms/adesaoExterno/salvar",
+        formsUrl("/adesaoExterno/salvar"),
         {
           method: "POST",
           headers: {
@@ -1047,6 +1034,12 @@ const Tabela: React.FC = () => {
   useEffect(() => {
     localStorage.setItem("dependents", JSON.stringify(dependents));
   }, [dependents]);
+
+  const areAllDependentsFieldsFilled =
+    dependents.length > 0 &&
+    dependents.every((dependent) =>
+      Object.values(dependent).every((value) => value.trim() !== "")
+    );
 
   return (
     <div className="max-x-auto">
@@ -1672,7 +1665,7 @@ const Tabela: React.FC = () => {
             !telefones.trim() ||
             !email.trim() ||
             !portabilidade.trim() ||
-            dependents.length === 0
+            !areAllDependentsFieldsFilled
           }
           className={`hide-print text-white px-4 py-2 transition duration-300 rounded btn
     ${
@@ -1683,7 +1676,7 @@ const Tabela: React.FC = () => {
       !telefones.trim() ||
       !email.trim() ||
       !portabilidade.trim() ||
-      dependents.length === 0
+      !areAllDependentsFieldsFilled
         ? "bg-gray-500 cursor-not-allowed opacity-50"
         : "bg-blue-600 hover:bg-blue-700"
     }
@@ -1697,4 +1690,5 @@ const Tabela: React.FC = () => {
 };
 
 export default Tabela;
+
 
