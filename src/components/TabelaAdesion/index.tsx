@@ -279,13 +279,10 @@ const Tabela: React.FC = () => {
   };
 
   const formatDate = (value: string) => {
-    // Formata a string da data em DD/MM/YYYY
-    if (value.length <= 8) {
-      return value
-        .replace(/(\d{2})(\d)/, "$1/$2") // Adiciona a barra após os primeiros dois dígitos
-        .replace(/(\d{2})(\d)/, "$1/$2"); // Adiciona a barra após os próximos dois dígitos
-    }
-    return value; // Retorna o valor não formatado se tiver mais de 8 dígitos
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   };
 
   const validDDDs = [
@@ -477,6 +474,46 @@ const Tabela: React.FC = () => {
   const format2CartaoSUS = (value: string) => {
     return value.replace(/\D/g, "").slice(0, 15);
   };
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  };
+  const getDigits = (value: string) => value.replace(/\D/g, "");
+  const isValidDate = (value: string) => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
+    const [dayStr, monthStr, yearStr] = value.split("/");
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
+    if (year < 1900 || year > new Date().getFullYear()) return false;
+
+    const date = new Date(year, month - 1, day);
+    return (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    );
+  };
+  const isValidDDD = (phone: string) => {
+    const cleaned = getDigits(phone);
+    if (cleaned.length < 2) return false;
+    const ddd = cleaned.slice(0, 2);
+    return validDDDs.includes(ddd);
+  };
+  const isValidPhone = (phone: string) => {
+    const cleaned = getDigits(phone);
+    if (!(cleaned.length === 10 || cleaned.length === 11)) return false;
+    return isValidDDD(cleaned);
+  };
+  const isValidCNS = (value: string) => {
+    const cns = getDigits(value);
+    if (!/^\d{15}$/.test(cns)) return false;
+    if (!/^[12789]/.test(cns)) return false;
+
+    const sum = cns
+      .split("")
+      .reduce((acc, digit, index) => acc + Number(digit) * (15 - index), 0);
+    return sum % 11 === 0;
+  };
   const handleTelefoneChange = (index: number, value: string) => {
     const telefones = value.split(",").map((telefone) => telefone.trim());
 
@@ -509,15 +546,19 @@ const Tabela: React.FC = () => {
   };
 
   const format2PhoneNumber = (value: string) => {
-    // Remove tudo que não for número
-    const cleaned = value.replace(/\D/g, "");
-
-    // Aplica a máscara: (XX) XXXXX-XXXX
-    const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-    if (match) {
-      return `(${match[1]}) ${match[2]}-${match[3]}`;
+    const cleaned = value.replace(/\D/g, "").slice(0, 11);
+    if (cleaned.length <= 2) return cleaned;
+    if (cleaned.length <= 6) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
     }
-    return value; // Retorna sem formatação se o número estiver incompleto
+    if (cleaned.length <= 10) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(
+        6
+      )}`;
+    }
+    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(
+      7
+    )}`;
   };
 
   const MenssagemApiOK = () =>
@@ -550,32 +591,53 @@ const Tabela: React.FC = () => {
   // Função para validar os dependentes
   const validateDependents = () => {
     let isValid = true;
-
+    const errors: { [key: number]: string } = {};
     dependents.forEach((dependent, index) => {
-      if (
-        !dependent.nome ||
-        !dependent.telefones ||
-        !dependent.email ||
-        !dependent.cpf ||
-        !dependent.parentesco ||
-        !dependent.dataNascimento
-      ) {
-        isValid = false;
+      const dependentErrors: string[] = [];
 
-        // Aqui você pode atualizar o estado de erro para mostrar mensagens específicas
-        setError3((prevState) => ({
-          ...prevState,
-          [index]: "Todos os campos obrigatórios devem ser preenchidos.",
-        }));
+      if (!dependent.nome?.trim()) dependentErrors.push("Nome é obrigatório.");
+      if (!dependent.dataNascimento?.trim()) {
+        dependentErrors.push("Data de nascimento é obrigatória.");
+      } else if (!isValidDate(dependent.dataNascimento)) {
+        dependentErrors.push("Data inválida. Use DD/MM/AAAA.");
+      }
+      if (!dependent.estadoCivil?.trim()) {
+        dependentErrors.push("Estado civil é obrigatório.");
+      }
+      if (!dependent.email?.trim()) {
+        dependentErrors.push("E-mail é obrigatório.");
+      } else if (!isValidEmail(dependent.email)) {
+        dependentErrors.push("E-mail inválido.");
+      }
+      if (!dependent.telefones?.trim()) {
+        dependentErrors.push("Telefone é obrigatório.");
+      } else if (!isValidPhone(dependent.telefones)) {
+        dependentErrors.push(
+          "Telefone inválido. Verifique DDD e número (10 ou 11 dígitos)."
+        );
+      }
+      if (!dependent.cpf?.trim()) {
+        dependentErrors.push("CPF é obrigatório.");
+      } else if (!isValidCPF(getDigits(dependent.cpf))) {
+        dependentErrors.push("CPF inválido.");
+      }
+      if (!dependent.parentesco?.trim()) {
+        dependentErrors.push("Parentesco é obrigatório.");
+      }
+      if (!dependent.cartaoSus?.trim()) {
+        dependentErrors.push("Cartão SUS é obrigatório.");
+      } else if (!isValidCNS(dependent.cartaoSus)) {
+        dependentErrors.push("Cartão SUS inválido.");
+      }
+
+      if (dependentErrors.length > 0) {
+        isValid = false;
+        errors[index] = dependentErrors.join(" ");
       } else {
-        // Remove erros do índice atual se os campos estiverem preenchidos
-        setError3((prevState) => ({
-          ...prevState,
-          [index]: "",
-        }));
+        errors[index] = "";
       }
     });
-
+    setError3(errors);
     return isValid;
   };
 
@@ -587,6 +649,11 @@ const Tabela: React.FC = () => {
     if (!dateString) return "";
 
     try {
+      if (dateString.includes("/")) {
+        const [day, month, year] = dateString.split("/");
+        if (!day || !month || !year) return "";
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      }
       const date = new Date(dateString);
       // Formata para YYYY-MM-DD (formato aceito pelo MySQL)
       const year = date.getFullYear();
@@ -605,34 +672,19 @@ const Tabela: React.FC = () => {
     e.preventDefault(); // Evita o comportamento padrão do form
 
     setIsSubmitting(true);
-
-    // Função para verificar se um dependente é válido
-    const isValidDependent = (dependent: any) => {
-      return (
-        dependent.nome?.trim() &&
-        dependent.dataNascimento?.trim() &&
-        dependent.estadoCivil?.trim() &&
-        dependent.cartaoSus?.trim() &&
-        dependent.cpf?.trim()
-      );
-    };
-
-    // Verifica e retorna uma lista de dependentes inválidos
-    const invalidDependents = dependents.filter(
-      (dependent) => !isValidDependent(dependent)
-    );
-
-    if (invalidDependents.length > 0) {
-      // Exibe mensagens de erro para os dependentes inválidos
-      MenssagemApiNotOK(
-        "Por favor, preencha todos os campos obrigatórios dos dependentes."
-      );
-      console.error("Dependentes inválidos:", invalidDependents);
-      return; // Impede o envio dos dados
+    const isDependentsValid = validateDependents();
+    if (!isDependentsValid) {
+      MenssagemApiNotOK("Existem campos inválidos nos dependentes.");
+      setIsSubmitting(false);
+      return;
     }
-
-    // Filtra apenas os dependentes válidos
-    const validDependents = dependents.filter(isValidDependent);
+    const validDependents = dependents.map((dependent) => ({
+      ...dependent,
+      dataNascimento: formatDateForDatabase(dependent.dataNascimento),
+      telefones: format2PhoneNumber(dependent.telefones),
+      email: dependent.email.trim(),
+      cartaoSus: getDigits(dependent.cartaoSus),
+    }));
 
     const dtAdesaoAoPlano = `${new Date().toLocaleDateString(
       "pt-BR"
@@ -760,8 +812,12 @@ const Tabela: React.FC = () => {
         doc.text(termText4, 10, termTextY);
 
         // Função para formatar a data no formato DD/MM/YYYY
-        function formatDate(dateString: any) {
+        function formatDate(dateString: string) {
+          if (!dateString) return "";
+          if (dateString.includes("/")) return dateString;
+
           const date = new Date(dateString);
+          if (Number.isNaN(date.getTime())) return "";
           const day = String(date.getDate()).padStart(2, "0");
           const month = String(date.getMonth() + 1).padStart(2, "0");
           const year = date.getFullYear();
@@ -1155,7 +1211,7 @@ const Tabela: React.FC = () => {
                         </label>
                         <input
                           type="text2"
-                          maxLength={11}
+                          maxLength={15}
                           value={dependent.telefones}
                           required
                           onChange={(e) =>
@@ -1184,8 +1240,9 @@ const Tabela: React.FC = () => {
                         </label>
                         <input
                           type="email"
-                          maxLength={21}
+                          maxLength={80}
                           value={dependent.email}
+                          required
                           onChange={(e) =>
                             handleDependentesChange(
                               index,
@@ -1213,6 +1270,7 @@ const Tabela: React.FC = () => {
                           type="text2"
                           maxLength={15}
                           value={dependent.cartaoSus}
+                          required
                           onChange={(e) =>
                             handleDependentesChange(
                               index,
@@ -1368,7 +1426,10 @@ const Tabela: React.FC = () => {
                           Data de Nascimento
                         </label>
                         <input
-                          type="date"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={10}
+                          placeholder="DD/MM/AAAA"
                           value={dependent.dataNascimento}
                           onChange={(e) =>
                             handleDependentesChange(
