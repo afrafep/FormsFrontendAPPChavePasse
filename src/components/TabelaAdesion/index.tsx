@@ -77,6 +77,7 @@ const Tabela: React.FC = () => {
   const [error3, setError3] = useState<{ [key: number]: string }>({});
   const [emailErrors, setEmailErrors] = useState<{ [key: number]: string }>({});
   const [dateErrors, setDateErrors] = useState<{ [key: number]: string }>({});
+  const [susErrors, setSusErrors] = useState<{ [key: number]: string }>({});
 
   const [detalhe, setDetalhe] = useState(false);
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
@@ -509,12 +510,27 @@ const Tabela: React.FC = () => {
   const isValidCNS = (value: string) => {
     const cns = getDigits(value);
     if (!/^\d{15}$/.test(cns)) return false;
+    if (/^(\d)\1{14}$/.test(cns)) return false;
     if (!/^[12789]/.test(cns)) return false;
 
     const sum = cns
       .split("")
       .reduce((acc, digit, index) => acc + Number(digit) * (15 - index), 0);
     return sum % 11 === 0;
+  };
+  const handleSusBlur = (index: number, value: string) => {
+    if (!value.trim()) {
+      setSusErrors((prev) => ({ ...prev, [index]: "Cartão SUS é obrigatório." }));
+      return;
+    }
+    if (!isValidCNS(value)) {
+      setSusErrors((prev) => ({
+        ...prev,
+        [index]: "Digite um cartão válido do SUS.",
+      }));
+      return;
+    }
+    setSusErrors((prev) => ({ ...prev, [index]: "" }));
   };
   const handleEmailBlur = (index: number, value: string) => {
     if (!value.trim()) {
@@ -624,6 +640,7 @@ const Tabela: React.FC = () => {
     const errors: { [key: number]: string } = {};
     const emailFieldErrors: { [key: number]: string } = {};
     const dateFieldErrors: { [key: number]: string } = {};
+    const susFieldErrors: { [key: number]: string } = {};
     dependents.forEach((dependent, index) => {
       const dependentErrors: string[] = [];
 
@@ -666,8 +683,12 @@ const Tabela: React.FC = () => {
       }
       if (!dependent.cartaoSus?.trim()) {
         dependentErrors.push("Cartão SUS é obrigatório.");
+        susFieldErrors[index] = "Cartão SUS é obrigatório.";
       } else if (!isValidCNS(dependent.cartaoSus)) {
-        dependentErrors.push("Cartão SUS inválido.");
+        dependentErrors.push("Digite um cartão válido do SUS.");
+        susFieldErrors[index] = "Digite um cartão válido do SUS.";
+      } else {
+        susFieldErrors[index] = "";
       }
 
       if (dependentErrors.length > 0) {
@@ -680,6 +701,7 @@ const Tabela: React.FC = () => {
     setError3(errors);
     setEmailErrors(emailFieldErrors);
     setDateErrors(dateFieldErrors);
+    setSusErrors(susFieldErrors);
     return isValid;
   };
 
@@ -1326,14 +1348,26 @@ const Tabela: React.FC = () => {
                           value={dependent.cartaoSus}
                           required
                           onChange={(e) =>
-                            handleDependentesChange(
-                              index,
-                              "cartaoSus",
-                              format2CartaoSUS(e.target.value)
-                            )
+                            {
+                              handleDependentesChange(
+                                index,
+                                "cartaoSus",
+                                format2CartaoSUS(e.target.value)
+                              );
+                              setSusErrors((prev) => ({
+                                ...prev,
+                                [index]: "",
+                              }));
+                            }
                           }
+                          onBlur={(e) => handleSusBlur(index, e.target.value)}
                           className="mt-1 block w-full sm:w-40 px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
+                        {susErrors[index] && (
+                          <p className="text-red-500 text-xs">
+                            {susErrors[index]}
+                          </p>
+                        )}
                       </div>
 
                       {/* Nome da Mãe */}
