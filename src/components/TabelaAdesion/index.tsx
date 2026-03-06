@@ -1286,12 +1286,19 @@ const Tabela: React.FC = () => {
                           value={dependent.email}
                           required
                           onChange={(e) =>
-                            handleDependentesChange(
-                              index,
-                              "email",
-                              e.target.value
-                            )
+                            {
+                              handleDependentesChange(
+                                index,
+                                "email",
+                                e.target.value
+                              );
+                              setEmailErrors((prev) => ({
+                                ...prev,
+                                [index]: "",
+                              }));
+                            }
                           }
+                          onBlur={(e) => handleEmailBlur(index, e.target.value)}
                           className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
@@ -1301,6 +1308,11 @@ const Tabela: React.FC = () => {
                             minWidth: "200px",
                           }}
                         />
+                        {emailErrors[index] && (
+                          <p className="text-red-500 text-xs">
+                            {emailErrors[index]}
+                          </p>
+                        )}
                       </div>
 
                       {/* Cartão SUS */}
@@ -1474,14 +1486,26 @@ const Tabela: React.FC = () => {
                           placeholder="DD/MM/AAAA"
                           value={dependent.dataNascimento}
                           onChange={(e) =>
-                            handleDependentesChange(
-                              index,
-                              "dataNascimento",
-                              formatDate(e.target.value)
-                            )
+                            {
+                              handleDependentesChange(
+                                index,
+                                "dataNascimento",
+                                formatDate(e.target.value)
+                              );
+                              setDateErrors((prev) => ({
+                                ...prev,
+                                [index]: "",
+                              }));
+                            }
                           }
+                          onBlur={(e) => handleDateBlur(index, e.target.value)}
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
+                        {dateErrors[index] && (
+                          <p className="text-red-500 text-xs">
+                            {dateErrors[index]}
+                          </p>
+                        )}
                       </div>
 
                       {/* Sexo */}
