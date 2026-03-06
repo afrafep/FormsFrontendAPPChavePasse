@@ -1052,7 +1052,7 @@ const Tabela: React.FC = () => {
     <div className="max-x-auto">
       <form onSubmit={handleSubmit}>
         {/* Dados do Titular do Plano */}
-        <table className="w-full table-fixed">
+        <table className="min-w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl">
           <thead>
             <tr>
               <th
@@ -1063,9 +1063,9 @@ const Tabela: React.FC = () => {
               </th>
             </tr>
           </thead>
-          <div className="space-y-4 px-2 sm:px-0 titular-section">
-            <div className="border-b pb-4 mt-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 titular-grid">
+          <div className="space-y-6">
+            <div className="border-b pb-6 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Nome */}
                 <div className="w-full">
                   <label className="font-bold block mb-1">Nome:</label>
