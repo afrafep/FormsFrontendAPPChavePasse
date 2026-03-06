@@ -1063,9 +1063,9 @@ const Tabela: React.FC = () => {
               </th>
             </tr>
           </thead>
-          <div className="space-y-6">
-            <div className="border-b pb-6 mt-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-3 titular-compact">
+            <div className="border-b pb-4 mt-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                 {/* Nome */}
                 <div className="w-full">
                   <label className="font-bold block mb-1">Nome:</label>

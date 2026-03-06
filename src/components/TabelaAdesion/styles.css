@@ -180,6 +180,15 @@ h2 {
   margin: 0; /* Remove margem do título */
 }
 
+.titular-compact label {
+  margin-bottom: 2px;
+}
+
+.titular-compact h3 {
+  margin: 0;
+  line-height: 1.25;
+}
+
 @media print {
   @page {
     margin: 0; /* Remove margens da página */
