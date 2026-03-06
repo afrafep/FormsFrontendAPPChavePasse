@@ -75,6 +75,8 @@ const Tabela: React.FC = () => {
 
   const [error, setError] = useState<string>("");
   const [error3, setError3] = useState<{ [key: number]: string }>({});
+  const [emailErrors, setEmailErrors] = useState<{ [key: number]: string }>({});
+  const [dateErrors, setDateErrors] = useState<{ [key: number]: string }>({});
 
   const [detalhe, setDetalhe] = useState(false);
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
@@ -514,6 +516,34 @@ const Tabela: React.FC = () => {
       .reduce((acc, digit, index) => acc + Number(digit) * (15 - index), 0);
     return sum % 11 === 0;
   };
+  const handleEmailBlur = (index: number, value: string) => {
+    if (!value.trim()) {
+      setEmailErrors((prev) => ({ ...prev, [index]: "E-mail é obrigatório." }));
+      return;
+    }
+    if (!isValidEmail(value)) {
+      setEmailErrors((prev) => ({ ...prev, [index]: "E-mail inválido." }));
+      return;
+    }
+    setEmailErrors((prev) => ({ ...prev, [index]: "" }));
+  };
+  const handleDateBlur = (index: number, value: string) => {
+    if (!value.trim()) {
+      setDateErrors((prev) => ({
+        ...prev,
+        [index]: "Data de nascimento é obrigatória.",
+      }));
+      return;
+    }
+    if (!isValidDate(value)) {
+      setDateErrors((prev) => ({
+        ...prev,
+        [index]: "Data inválida. Use DD/MM/AAAA.",
+      }));
+      return;
+    }
+    setDateErrors((prev) => ({ ...prev, [index]: "" }));
+  };
   const handleTelefoneChange = (index: number, value: string) => {
     const telefones = value.split(",").map((telefone) => telefone.trim());
 
@@ -592,22 +622,32 @@ const Tabela: React.FC = () => {
   const validateDependents = () => {
     let isValid = true;
     const errors: { [key: number]: string } = {};
+    const emailFieldErrors: { [key: number]: string } = {};
+    const dateFieldErrors: { [key: number]: string } = {};
     dependents.forEach((dependent, index) => {
       const dependentErrors: string[] = [];
 
       if (!dependent.nome?.trim()) dependentErrors.push("Nome é obrigatório.");
       if (!dependent.dataNascimento?.trim()) {
         dependentErrors.push("Data de nascimento é obrigatória.");
+        dateFieldErrors[index] = "Data de nascimento é obrigatória.";
       } else if (!isValidDate(dependent.dataNascimento)) {
         dependentErrors.push("Data inválida. Use DD/MM/AAAA.");
+        dateFieldErrors[index] = "Data inválida. Use DD/MM/AAAA.";
+      } else {
+        dateFieldErrors[index] = "";
       }
       if (!dependent.estadoCivil?.trim()) {
         dependentErrors.push("Estado civil é obrigatório.");
       }
       if (!dependent.email?.trim()) {
         dependentErrors.push("E-mail é obrigatório.");
+        emailFieldErrors[index] = "E-mail é obrigatório.";
       } else if (!isValidEmail(dependent.email)) {
         dependentErrors.push("E-mail inválido.");
+        emailFieldErrors[index] = "E-mail inválido.";
+      } else {
+        emailFieldErrors[index] = "";
       }
       if (!dependent.telefones?.trim()) {
         dependentErrors.push("Telefone é obrigatório.");
@@ -638,6 +678,8 @@ const Tabela: React.FC = () => {
       }
     });
     setError3(errors);
+    setEmailErrors(emailFieldErrors);
+    setDateErrors(dateFieldErrors);
     return isValid;
   };
 
@@ -1168,7 +1210,7 @@ const Tabela: React.FC = () => {
         {dependents.map((dependent, index) => (
           <React.Fragment key={index}>
             <div className="mt-4 px-3 sm:px-6 lg:px-8">
-              <div className="overflow-hidden bg-white shadow sm:rounded-lg">
+              <div className="overflow-hidden bg-white sm:rounded-lg">
                 <div className="px-3 py-5 sm:px-6">
                   <h3 className="text-lg font-medium leading-6 text-gray-900">
                     Dados dos Dependentes - {`0${index + 1}`}
@@ -1193,7 +1235,7 @@ const Tabela: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
                               40,
@@ -1217,7 +1259,7 @@ const Tabela: React.FC = () => {
                           onChange={(e) =>
                             handleTelefoneChange(index, e.target.value)
                           }
-                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
                               55,
@@ -1250,7 +1292,7 @@ const Tabela: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
                               55,
@@ -1278,7 +1320,7 @@ const Tabela: React.FC = () => {
                               format2CartaoSUS(e.target.value)
                             )
                           }
-                          className="mt-1 block w-full sm:w-40 px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full sm:w-40 px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                       </div>
 
@@ -1298,7 +1340,7 @@ const Tabela: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
                               40,
@@ -1323,7 +1365,7 @@ const Tabela: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         >
                           <option value="">Selecione</option>
                           <option value="Pai">Pai</option>
@@ -1358,7 +1400,7 @@ const Tabela: React.FC = () => {
                               format2CPF(e.target.value)
                             )
                           }
-                          className="mt-1 block w-full sm:w-[140px] px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full sm:w-[140px] px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                         {error && (
                           <p className="text-red-500 text-xs">{error}</p>
@@ -1384,7 +1426,7 @@ const Tabela: React.FC = () => {
                               )
                             }
                             maxLength={11}
-                            className="block w-[127px] px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block w-[127px] px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="RG Nº"
                           />
                           {/* Órgão Emissor */}
@@ -1399,7 +1441,7 @@ const Tabela: React.FC = () => {
                               )
                             }
                             maxLength={3}
-                            className="block w-20 px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block w-20 px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="Órgão"
                           />
                           {/* UF Emissor */}
@@ -1414,7 +1456,7 @@ const Tabela: React.FC = () => {
                               )
                             }
                             maxLength={2}
-                            className="block w-[55px] px-3 py-2 border-b border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            className="block w-[55px] px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             placeholder="UF"
                           />
                         </div>
@@ -1438,7 +1480,7 @@ const Tabela: React.FC = () => {
                               formatDate(e.target.value)
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                       </div>
 
@@ -1516,7 +1558,7 @@ const Tabela: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         >
                           <option value="">Selecione</option>
                           <option value="solteiro">Solteiro</option>
@@ -1597,3 +1639,4 @@ const Tabela: React.FC = () => {
 };
 
 export default Tabela;
+
