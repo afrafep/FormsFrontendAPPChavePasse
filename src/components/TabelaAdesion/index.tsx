@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   CHAVE_TOKEN,
   MOCK_CPF,
+  formsFetch,
   formsUrl,
   getBearerHeaders,
   getChaveUnica,
@@ -137,7 +138,7 @@ const Tabela: React.FC = () => {
             email: titularApiData.EMAIL,
             nmMae: "",
             dtNascimento: titularApiData.DT_NASCIMENTO,
-            cns: "",
+            cns: titularApiData.CD_CNS || titularApiData.cd_cns || "",
             formaPagamento: titularApiData.CD_FORMA_PAGAMENTO,
             rg: titularApiData.NU_RG,
             orgaoRg: titularApiData.CD_ORGAO_RG,
@@ -252,8 +253,8 @@ const Tabela: React.FC = () => {
       // Fazer a requisição para a API para remover o dependente da tabela
       try {
         // Monta a URL com CPF e RG do dependente
-        const response = await fetch(
-          formsUrl(`/adesao/${dependentToRemove.cpf}`),
+        const response = await formsFetch(
+          `/adesao/${dependentToRemove.cpf}`,
           {
             method: "DELETE",
             headers: {
@@ -504,37 +505,27 @@ const Tabela: React.FC = () => {
       date.getDate() === day
     );
   };
-  const isValidDDD = (phone: string) => {
-    const cleaned = getDigits(phone);
-    if (cleaned.length < 2) return false;
-    const ddd = cleaned.slice(0, 2);
-    return validDDDs.includes(ddd);
-  };
+  const isValidDDD = (ddd: string) => validDDDs.includes(ddd);
   const isValidPhone = (phone: string) => {
-    const cleaned = getDigits(phone);
-    if (!(cleaned.length === 10 || cleaned.length === 11)) return false;
-    return isValidDDD(cleaned);
+    if (!/^\d{2}\s\d\s\d{4}-\d{4}$/.test(phone)) return false;
+    const ddd = phone.slice(0, 2);
+    return isValidDDD(ddd);
   };
   const isValidCNS = (value: string) => {
     const cns = getDigits(value);
     if (!/^\d{15}$/.test(cns)) return false;
     if (/^(\d)\1{14}$/.test(cns)) return false;
-    if (!/^[12789]/.test(cns)) return false;
-
-    const sum = cns
-      .split("")
-      .reduce((acc, digit, index) => acc + Number(digit) * (15 - index), 0);
-    return sum % 11 === 0;
+    return true;
   };
   const handleSusBlur = (index: number, value: string) => {
     if (!value.trim()) {
-      setSusErrors((prev) => ({ ...prev, [index]: "Cartão SUS é obrigatório." }));
+      setSusErrors((prev) => ({ ...prev, [index]: "Cartao SUS e obrigatorio." }));
       return;
     }
     if (!isValidCNS(value)) {
       setSusErrors((prev) => ({
         ...prev,
-        [index]: "Digite um cartão válido do SUS.",
+        [index]: "Cartao SUS invalido. Informe 15 digitos.",
       }));
       return;
     }
@@ -569,50 +560,25 @@ const Tabela: React.FC = () => {
     setDateErrors((prev) => ({ ...prev, [index]: "" }));
   };
   const handleTelefoneChange = (index: number, value: string) => {
-    const telefones = value.split(",").map((telefone) => telefone.trim());
+    setError3((prevErrors) => ({
+      ...prevErrors,
+      [index]: "",
+    }));
 
-    // Mapeia os telefones formatados e verifica erros
-    const telefonesFormatados = telefones.map((telefone) => {
-      const cleaned = telefone.replace(/\D/g, ""); // Remove caracteres não numéricos
-      const ddd = cleaned.substring(0, 2); // Extrai o DDD
-
-      // Valida DDD
-      if (!validDDDs.includes(ddd)) {
-        // Adiciona erro individualmente se o DDD for inválido
-        setError3((prevErrors) => ({
-          ...prevErrors,
-          [index]: "DDD inválido. Por favor, insira um DDD válido.", // Mensagem de erro para este dependente
-        }));
-        return format2PhoneNumber(telefone); // Retorna o telefone formatado, mesmo que o DDD seja inválido
-      }
-
-      // Limpa o erro para este dependente se o DDD for válido
-      setError3((prevErrors) => ({
-        ...prevErrors,
-        [index]: "", // Limpa a mensagem de erro se o DDD for válido
-      }));
-
-      return format2PhoneNumber(telefone); // Formata o telefone se o DDD for válido
-    });
-
-    // Atualiza os dependentes com os telefones formatados
-    handleDependentesChange(index, "telefones", telefonesFormatados.join(", "));
+    handleDependentesChange(index, "telefones", format2PhoneNumber(value));
   };
 
   const format2PhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, "").slice(0, 11);
     if (cleaned.length <= 2) return cleaned;
-    if (cleaned.length <= 6) {
-      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2)}`;
+    if (cleaned.length <= 3) return `${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
+    if (cleaned.length <= 7) {
+      return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 3)} ${cleaned.slice(3)}`;
     }
-    if (cleaned.length <= 10) {
-      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(
-        6
-      )}`;
-    }
-    return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(
+    return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 3)} ${cleaned.slice(
+      3,
       7
-    )}`;
+    )}-${cleaned.slice(7)}`;
   };
 
   const MenssagemApiOK = () =>
@@ -675,11 +641,9 @@ const Tabela: React.FC = () => {
         emailFieldErrors[index] = "";
       }
       if (!dependent.telefones?.trim()) {
-        dependentErrors.push("Telefone é obrigatório.");
+        dependentErrors.push("Telefone e obrigatorio.");
       } else if (!isValidPhone(dependent.telefones)) {
-        dependentErrors.push(
-          "Telefone inválido. Verifique DDD e número (10 ou 11 dígitos)."
-        );
+        dependentErrors.push("Telefone invalido. Use o formato 99 9 9999-9999 com DDD do Brasil.");
       }
       if (!dependent.cpf?.trim()) {
         dependentErrors.push("CPF é obrigatório.");
@@ -690,11 +654,11 @@ const Tabela: React.FC = () => {
         dependentErrors.push("Parentesco é obrigatório.");
       }
       if (!dependent.cartaoSus?.trim()) {
-        dependentErrors.push("Cartão SUS é obrigatório.");
-        susFieldErrors[index] = "Cartão SUS é obrigatório.";
+        dependentErrors.push("Cartao SUS e obrigatorio.");
+        susFieldErrors[index] = "Cartao SUS e obrigatorio.";
       } else if (!isValidCNS(dependent.cartaoSus)) {
-        dependentErrors.push("Digite um cartão válido do SUS.");
-        susFieldErrors[index] = "Digite um cartão válido do SUS.";
+        dependentErrors.push("Cartao SUS invalido. Informe 15 digitos.");
+        susFieldErrors[index] = "Cartao SUS invalido. Informe 15 digitos.";
       } else {
         susFieldErrors[index] = "";
       }
@@ -762,41 +726,23 @@ const Tabela: React.FC = () => {
       "pt-BR"
     )} às ${new Date().toLocaleTimeString("pt-BR", { hour12: false })}`;
 
-  const dataToSend: any = {
-      titular,
-      cpf,
-      matricula,
-      pagamento,
-      envioBoleto,
-      agencia,
-      conta,
-      banco,
-      telefones,
-      email,
-      portabilidade,
-      dtAdesaoAoPlano,
-      opcaoSelecionada: "C", // Sempre enviar "C"
-      sexoTitular: titularData ? titularData.sexo : "",
-      nomeMae: titularData?.nmMae || "",
-      dtNascimento: formatDateForDatabase(titularData?.dtNascimento || ""),
-      cartaosus: titularData?.cns || "",
-      formaPagamento: titularData?.formaPagamento || 0,
-      rg: titularData?.rg || "",
-      uf_emissor_rg: titularData?.orgaoRg || "",
-      uf_rg: titularData?.ufRg || "",
-      endereco: titularData?.logradouro || "",
-      numeroCasa: titularData?.numero || 0,
-      complement: titularData?.complemento || "",
-      cidade: titularData?.cidade || "",
-      bairro: titularData?.bairro || "",
-      cidade_uf: titularData?.uf || "",
-      cep: titularData?.cep || ""
-  };
-
-    // Adiciona dependentes ao objeto apenas se houver dependentes válidos
-    if (validDependents.length > 0) {
-      dataToSend.dependents = validDependents;
-    }
+    const dataToSend = {
+      adesao: {
+        CD_MATRICULA: matricula,
+        CD_BENEFICIARIO: titularData?.cdBeneficiario || "",
+        NM_BENEFICIARIO: titular,
+        NU_CPF: getDigits(cpf),
+        CD_CNS: getDigits(titularData?.cns || ""),
+      },
+      dependentes: validDependents.map((dependent) => ({
+        NM_MATRICULA_TITULAR: matricula,
+        NM_BENEFICIARIO: dependent.nome,
+        NU_CPF: getDigits(dependent.cpf),
+        CD_CNS: getDigits(dependent.cartaoSus),
+        CELULAR: getDigits(dependent.telefones),
+        EMAIL: dependent.email.trim(),
+      })),
+    };
 
     // Enviar os dados para o backend
     try {
@@ -805,8 +751,8 @@ const Tabela: React.FC = () => {
       setTimeout(() => {
         setIsButtonDisabled(false);
       }, 180000); // 180.000 ms = 3 minutos
-      const response = await fetch(
-        formsUrl("/adesaoExterno/salvar"),
+      const response = await formsFetch(
+        "/adesao/completa",
         {
           method: "POST",
           headers: {
@@ -1224,15 +1170,11 @@ const Tabela: React.FC = () => {
               <div className="flex flex-col md:flex-row md:space-x-4 mt-4">
                 <h1>
                   <strong>
-                    {Number(pagamento) === 1
-                      ? "DÉBITO CONSIGNADO"
-                      : Number(pagamento) === 2
-                      ? "EMPRÉSTIMO EMPRESARIAL"
-                      : Number(pagamento) === 3
+                    {Number(pagamento) === 1 || Number(pagamento) === 3
                       ? "DÉBITO EM CONTA"
                       : Number(pagamento) === 4
                       ? "COBRANÇA BANCÁRIA"
-                      : "NÃO INFORMADO"}
+                      : ""}
                   </strong>
                   <br />
                   <br />* Caso deseje alterar a forma de pagamento, entre em
@@ -1289,12 +1231,13 @@ const Tabela: React.FC = () => {
                         </label>
                         <input
                           type="text2"
-                          maxLength={15}
+                          maxLength={14}
                           value={dependent.telefones}
                           required
                           onChange={(e) =>
                             handleTelefoneChange(index, e.target.value)
                           }
+                          placeholder="99 9 9999-9999"
                           className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
                             width: `${Math.max(
@@ -1711,5 +1654,12 @@ const Tabela: React.FC = () => {
 };
 
 export default Tabela;
+
+
+
+
+
+
+
 
 

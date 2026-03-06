@@ -16,6 +16,7 @@ import Swal from "sweetalert2";
 import {
   CHAVE_TOKEN,
   MOCK_CPF,
+  formsFetch,
   formsUrl,
   getBearerHeaders,
   getChaveUnica,
@@ -104,7 +105,7 @@ function App() {
               nome: dependent.NM_BENEFICIARIO,
               cpf: dependent.NU_CPF,
               codigo: dependent.CD_BENEFICIARIO,
-              cns: "",
+              cns: dependent.CD_CNS || dependent.cd_cns || "",
               nmMae: "",
               dtNascimento: dependent.DT_NASCIMENTO,
               nmBeneficiario_titular: beneficiaryName,
@@ -711,13 +712,12 @@ function App() {
           : dependentsToExclude.length > 0 ? 3
           : 1;
 
-      const response = await fetch(
-        formsUrl("/exclusao/beneficiarios/salvar"),
+      const response = await formsFetch(
+        "/exclusao/beneficiarios/salvar",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${CHAVE_TOKEN}`,
           },
           body: JSON.stringify({
             beneficiaryName,

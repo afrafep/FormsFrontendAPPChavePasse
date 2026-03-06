@@ -19,7 +19,10 @@ const CHAVE_CACHE_KEY = "afrafep_chave_unica_cache";
 
 export const formsApi = axios.create({
   baseURL: FORMS_API_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${CHAVE_TOKEN}`,
+  },
 });
 
 export const formsUrl = (path = "") =>
@@ -33,6 +36,65 @@ export const getMosiaHeaders = (token = CHAVE_TOKEN) => ({
 export const getBearerHeaders = (token = CHAVE_TOKEN) => ({
   Authorization: `Bearer ${token}`,
 });
+
+const isFormsApiRequest = (url = "", baseURL = "") => {
+  const cleanUrl = String(url || "");
+  const cleanBaseURL = String(baseURL || "");
+
+  if (!cleanUrl) return false;
+
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl.startsWith(FORMS_API_URL);
+  }
+
+  if (cleanBaseURL) {
+    return cleanBaseURL.startsWith(FORMS_API_URL);
+  }
+
+  return false;
+};
+
+axios.interceptors.request.use((config) => {
+  if (!CHAVE_TOKEN) return config;
+
+  if (isFormsApiRequest(config.url, config.baseURL)) {
+    config.headers = {
+      ...(config.headers || {}),
+      ...getBearerHeaders(CHAVE_TOKEN),
+    };
+  }
+
+  return config;
+});
+
+formsApi.interceptors.request.use((config) => {
+  if (!CHAVE_TOKEN) return config;
+
+  config.headers = {
+    ...(config.headers || {}),
+    ...getBearerHeaders(CHAVE_TOKEN),
+  };
+
+  return config;
+});
+
+export const formsFetch = (pathOrUrl = "", options = {}) => {
+  const url =
+    String(pathOrUrl).startsWith("http://") ||
+    String(pathOrUrl).startsWith("https://")
+      ? String(pathOrUrl)
+      : formsUrl(pathOrUrl);
+
+  const headers = {
+    ...(options.headers || {}),
+    ...getBearerHeaders(CHAVE_TOKEN),
+  };
+
+  return fetch(url, {
+    ...options,
+    headers,
+  });
+};
 
 const readChaveCache = () => {
   try {

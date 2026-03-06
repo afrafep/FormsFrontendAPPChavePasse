@@ -14,6 +14,7 @@ import Swal from "sweetalert2";
 import {
   CHAVE_TOKEN,
   MOCK_CPF,
+  formsFetch,
   formsUrl,
   getBearerHeaders,
   getChaveUnica,
@@ -192,7 +193,7 @@ useEffect(() => {
                 nome: dependent.NM_BENEFICIARIO,
                 cpf: dependent.NU_CPF,
                 codigo: dependent.CD_BENEFICIARIO,
-                cns: "",
+                cns: dependent.CD_CNS || dependent.cd_cns || "",
                 nmMae: "",
                 dtNascimento: dependent.DT_NASCIMENTO,
               }))
@@ -294,30 +295,44 @@ useEffect(() => {
     }
 
     const clearFields = () => {
-      setDestinationState("");
+      setDestinationState([]);
       setStartDate("");
       setEndDate("");
     };
 
     // Enviar os dados para o backend
     try {
-      const response = await fetch(
-        formsUrl("/reciprocidade/beneficiarios/salvar"),
+      const ufDestino = Array.isArray(destinationState)
+        ? destinationState.join(",")
+        : destinationState;
+
+      const payload = {
+        reciprocidade: {
+          NU_CPF: cpf,
+          NM_BENEFICIARIO: beneficiaryName,
+          CD_MATRICULA: registrationCode,
+          CD_BENEFICIARIO: code,
+          UF_DESTINO: ufDestino,
+          DT_INICIO: startDate,
+          DT_FIM: endDate,
+        },
+        dependentes: dependents.map((dependent) => ({
+          NU_CPF: dependent.NU_CPF || dependent.cpf || "",
+          NM_BENEFICIARIO: dependent.NM_BENEFICIARIO || dependent.nome || "",
+          CD_MATRICULA: registrationCode,
+          CD_BENEFICIARIO:
+            dependent.CD_BENEFICIARIO || dependent.codigo || "",
+        })),
+      };
+
+      const response = await formsFetch(
+        "/reciprocidade/completa",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            beneficiaryName,
-            registrationCode,
-            cpf,
-            code,
-            destinationState,
-            startDate,
-            endDate,
-            dependents,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -328,6 +343,9 @@ useEffect(() => {
       const result = await response.json();
       MenssagemSemDependent();
       clearFields();
+      const homePath = chavePasse ? `/?chavePasse=${chavePasse}` : "/";
+      setTimeout(() => navigate(homePath), 1200);
+      return;
       /*   console.log(result.message); // Mensagem de sucesso */
     } catch (error) {
       console.error("Erro:", error);

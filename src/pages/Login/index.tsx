@@ -8,15 +8,15 @@ import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import logologin from "../../assets/logotela.avif";
 import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa"; // Importando os ícones
-import { formsUrl } from "../../services/api";
+import { formsFetch } from "../../services/api";
 
 const loginApi = async (
   username: string,
   password: string
 ): Promise<{ success: boolean; message: string; token?: string }> => {
   try {
-    const response = await fetch(
-      formsUrl("/Acess"),
+    const response = await formsFetch(
+      "/Acess",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

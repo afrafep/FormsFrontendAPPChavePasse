@@ -13,7 +13,7 @@ import logo from "../../../images/afrafep.png";
 import rodape from "../../../images/afrafeprodape.png";
 import assinatura from "../../Dashboard/assinatura.png";
 import Cookies from "js-cookie";
-import { formsUrl } from "../../../services/api";
+import { formsFetch, formsUrl } from "../../../services/api";
 
 interface TableProps {
   data: any[];
@@ -66,20 +66,12 @@ const Table: React.FC<TableProps> = ({ data, activeTab }) => {
   };
 
   useEffect(() => {
-    const token = Cookies.get("Frontend"); // Obtém o token armazenado nos cookies
-
-    if (!token) {
-      console.error("Token não encontrado.");
-      return;
-    }
-
-    fetch(formsUrl("/exclusao/beneficiarios"), {
+    formsFetch("/exclusao/beneficiarios", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // Inclui o token no cabeçalho
       },
-      credentials: "include", // Garante que os cookies sejam enviados
+      credentials: "include",
     })
       .then((response) => {
         if (!response.ok) {
@@ -1120,3 +1112,5 @@ const Table: React.FC<TableProps> = ({ data, activeTab }) => {
 };
 
 export default Table;
+
+
