@@ -83,9 +83,9 @@ const Tabela: React.FC = () => {
 
   const [error, setError] = useState<string>("");
   const [error3, setError3] = useState<{ [key: number]: string }>({});
+  const [phoneErrors, setPhoneErrors] = useState<{ [key: number]: string }>({});
   const [emailErrors, setEmailErrors] = useState<{ [key: number]: string }>({});
   const [dateErrors, setDateErrors] = useState<{ [key: number]: string }>({});
-  const [susErrors, setSusErrors] = useState<{ [key: number]: string }>({});
 
   const [detalhe, setDetalhe] = useState(false);
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
@@ -511,25 +511,19 @@ const Tabela: React.FC = () => {
     const ddd = phone.slice(0, 2);
     return isValidDDD(ddd);
   };
-  const isValidCNS = (value: string) => {
-    const cns = getDigits(value);
-    if (!/^\d{15}$/.test(cns)) return false;
-    if (/^(\d)\1{14}$/.test(cns)) return false;
-    return true;
-  };
-  const handleSusBlur = (index: number, value: string) => {
+  const handlePhoneBlur = (index: number, value: string) => {
     if (!value.trim()) {
-      setSusErrors((prev) => ({ ...prev, [index]: "Cartao SUS e obrigatorio." }));
+      setPhoneErrors((prev) => ({ ...prev, [index]: "Telefone e obrigatorio." }));
       return;
     }
-    if (!isValidCNS(value)) {
-      setSusErrors((prev) => ({
+    if (!isValidPhone(value)) {
+      setPhoneErrors((prev) => ({
         ...prev,
-        [index]: "Cartao SUS invalido. Informe 15 digitos.",
+        [index]: "Telefone invalido. Use o formato 99 9 9999-9999 com DDD do Brasil.",
       }));
       return;
     }
-    setSusErrors((prev) => ({ ...prev, [index]: "" }));
+    setPhoneErrors((prev) => ({ ...prev, [index]: "" }));
   };
   const handleEmailBlur = (index: number, value: string) => {
     if (!value.trim()) {
@@ -561,6 +555,10 @@ const Tabela: React.FC = () => {
   };
   const handleTelefoneChange = (index: number, value: string) => {
     setError3((prevErrors) => ({
+      ...prevErrors,
+      [index]: "",
+    }));
+    setPhoneErrors((prevErrors) => ({
       ...prevErrors,
       [index]: "",
     }));
@@ -612,9 +610,9 @@ const Tabela: React.FC = () => {
   const validateDependents = () => {
     let isValid = true;
     const errors: { [key: number]: string } = {};
+    const phoneFieldErrors: { [key: number]: string } = {};
     const emailFieldErrors: { [key: number]: string } = {};
     const dateFieldErrors: { [key: number]: string } = {};
-    const susFieldErrors: { [key: number]: string } = {};
     dependents.forEach((dependent, index) => {
       const dependentErrors: string[] = [];
 
@@ -642,8 +640,12 @@ const Tabela: React.FC = () => {
       }
       if (!dependent.telefones?.trim()) {
         dependentErrors.push("Telefone e obrigatorio.");
+        phoneFieldErrors[index] = "Telefone e obrigatorio.";
       } else if (!isValidPhone(dependent.telefones)) {
         dependentErrors.push("Telefone invalido. Use o formato 99 9 9999-9999 com DDD do Brasil.");
+        phoneFieldErrors[index] = "Telefone invalido. Use o formato 99 9 9999-9999 com DDD do Brasil.";
+      } else {
+        phoneFieldErrors[index] = "";
       }
       if (!dependent.cpf?.trim()) {
         dependentErrors.push("CPF é obrigatório.");
@@ -653,16 +655,6 @@ const Tabela: React.FC = () => {
       if (!dependent.parentesco?.trim()) {
         dependentErrors.push("Parentesco é obrigatório.");
       }
-      if (!dependent.cartaoSus?.trim()) {
-        dependentErrors.push("Cartao SUS e obrigatorio.");
-        susFieldErrors[index] = "Cartao SUS e obrigatorio.";
-      } else if (!isValidCNS(dependent.cartaoSus)) {
-        dependentErrors.push("Cartao SUS invalido. Informe 15 digitos.");
-        susFieldErrors[index] = "Cartao SUS invalido. Informe 15 digitos.";
-      } else {
-        susFieldErrors[index] = "";
-      }
-
       if (dependentErrors.length > 0) {
         isValid = false;
         errors[index] = dependentErrors.join(" ");
@@ -671,9 +663,9 @@ const Tabela: React.FC = () => {
       }
     });
     setError3(errors);
+    setPhoneErrors(phoneFieldErrors);
     setEmailErrors(emailFieldErrors);
     setDateErrors(dateFieldErrors);
-    setSusErrors(susFieldErrors);
     return isValid;
   };
 
@@ -726,21 +718,60 @@ const Tabela: React.FC = () => {
       "pt-BR"
     )} às ${new Date().toLocaleTimeString("pt-BR", { hour12: false })}`;
 
+    const nowIso = new Date().toISOString();
     const dataToSend = {
       adesao: {
         CD_MATRICULA: matricula,
+        DS_TIPO_PESSOA: titularData?.tipoDependente || "",
         CD_BENEFICIARIO: titularData?.cdBeneficiario || "",
         NM_BENEFICIARIO: titular,
         NU_CPF: getDigits(cpf),
+        NU_RG: titularData?.rg || "",
+        CD_ORGAO_RG: titularData?.orgaoRg || "",
+        CD_UF_RG: titularData?.ufRg || "",
+        EMAIL: email?.trim() || "",
+        DT_NASCIMENTO: titularData?.dtNascimento || null,
+        FL_SEXO: titularData?.sexo || "",
+        NM_MAE: titularData?.nmMae || "",
+        DS_GRAU_PARENTESCO: titularData?.tipoDependente || "",
+        DS_LOGRADOURO: titularData?.logradouro || "",
+        NU_NUMERO:
+          titularData?.numero !== undefined && titularData?.numero !== null
+            ? String(titularData.numero)
+            : "",
+        DS_COMPLEMENTO: titularData?.complemento || "",
+        NM_CIDADE: titularData?.cidade || "",
+        NM_BAIRRO: titularData?.bairro || "",
+        CD_UF: titularData?.uf || "",
+        CD_CEP: titularData?.cep || "",
+        CELULAR: getDigits(telefones || ""),
+        FRM_PAGAMENTO: pagamento || "",
+        PGM_AGENCIA: agencia || "",
+        PGM_CONTA: conta || "",
+        PGM_BANCO: banco || "",
+        ENV_BOLETO: envioBoleto || "",
+        DATA_SOLICITACAO: nowIso,
+        OPCAO_SELECIONADA: portabilidade || "",
         CD_CNS: getDigits(titularData?.cns || ""),
       },
       dependentes: validDependents.map((dependent) => ({
         NM_MATRICULA_TITULAR: matricula,
         NM_BENEFICIARIO: dependent.nome,
         NU_CPF: getDigits(dependent.cpf),
+        NU_RG: dependent.rg || "",
+        CD_ORGAO_RG: dependent.uf_emissor_rg || "",
+        CD_UF_RG: dependent.uf_rg || "",
         CD_CNS: getDigits(dependent.cartaoSus),
+        DT_NASCIMENTO: dependent.dataNascimento || null,
+        FL_SEXO: dependent.sexoDependente || "",
+        EST_CIVIL: dependent.estadoCivil || "",
+        NM_MAE: dependent.nomeMae || "",
+        GRAU_PARENTESCO: dependent.parentesco || "",
         CELULAR: getDigits(dependent.telefones),
         EMAIL: dependent.email.trim(),
+        DATA_SOLICITACAO: nowIso,
+        CARTAO_SUS: getDigits(dependent.cartaoSus),
+        OPCAO_SELECIONADA: portabilidade || "",
       })),
     };
 
@@ -983,6 +1014,10 @@ const Tabela: React.FC = () => {
         // Atualizar o estado para mostrar o PDF
         setDetalhe(true);
 
+        setTimeout(() => {
+          navigate("/", { replace: true });
+        }, 1500);
+
         // Baixar o PDF
         /*         doc.save(`adesao_plano_${titular}.pdf`);
          */
@@ -1005,7 +1040,10 @@ const Tabela: React.FC = () => {
   const areAllDependentsFieldsFilled =
     dependents.length > 0 &&
     dependents.every((dependent) =>
-      Object.values(dependent).every((value) => value.trim() !== "")
+      Object.entries(dependent).every(([key, value]) => {
+        if (key === "cartaoSus") return true;
+        return value.trim() !== "";
+      })
     );
 
   return (
@@ -1237,6 +1275,7 @@ const Tabela: React.FC = () => {
                           onChange={(e) =>
                             handleTelefoneChange(index, e.target.value)
                           }
+                          onBlur={(e) => handlePhoneBlur(index, e.target.value)}
                           placeholder="99 9 9999-9999"
                           className="mt-1 block w-full px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                           style={{
@@ -1247,6 +1286,11 @@ const Tabela: React.FC = () => {
                             minWidth: "146px",
                           }}
                         />
+                        {phoneErrors[index] && (
+                          <p className="text-red-500 text-xs">
+                            {phoneErrors[index]}
+                          </p>
+                        )}
                         {error3[index] && (
                           <p className="text-red-500 text-xs">
                             {error3[index]}
@@ -1303,7 +1347,6 @@ const Tabela: React.FC = () => {
                           type="text2"
                           maxLength={15}
                           value={dependent.cartaoSus}
-                          required
                           onChange={(e) =>
                             {
                               handleDependentesChange(
@@ -1311,20 +1354,10 @@ const Tabela: React.FC = () => {
                                 "cartaoSus",
                                 format2CartaoSUS(e.target.value)
                               );
-                              setSusErrors((prev) => ({
-                                ...prev,
-                                [index]: "",
-                              }));
                             }
                           }
-                          onBlur={(e) => handleSusBlur(index, e.target.value)}
                           className="mt-1 block w-full sm:w-40 px-3 py-2 border-b border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
-                        {susErrors[index] && (
-                          <p className="text-red-500 text-xs">
-                            {susErrors[index]}
-                          </p>
-                        )}
                       </div>
 
                       {/* Nome da Mãe */}

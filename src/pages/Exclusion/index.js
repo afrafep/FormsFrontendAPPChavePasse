@@ -712,26 +712,41 @@ function App() {
           : dependentsToExclude.length > 0 ? 3
           : 1;
 
-      const response = await formsFetch(
-        "/exclusao/beneficiarios/salvar",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            beneficiaryName,
-            registrationCode,
-            cpf,
-            code,
-            tp_exclusao,
-            dependents: dependentsToExclude,
-            excludeAll,
-            excludeFinancialDependent,
-            isAllChecked
-          }),
-        }
-      );
+      const hasDependentes = dependentsToExclude.length > 0;
+
+      const endpoint = hasDependentes
+        ? "/exclusao-beneficiario/completa"
+        : "/exclusao-beneficiario";
+
+      const payload = hasDependentes
+        ? {
+            exclusao: {
+              CD_MATRICULA: registrationCode,
+              NM_BENEFICIARIO: beneficiaryName,
+              NU_CPF: cpf,
+              TP_EXCLUSAO: tp_exclusao,
+            },
+            dependentes: dependentsToExclude.map((dep) => ({
+              NM_TITULAR: dep.nmBeneficiario_titular || beneficiaryName,
+              NU_CPF_TITULAR: dep.nuCpf_titular || cpf,
+              NM_BENEFICIARIO: dep.nome,
+              NU_CPF: dep.cpf,
+            })),
+          }
+        : {
+            CD_MATRICULA: registrationCode,
+            NM_BENEFICIARIO: beneficiaryName,
+            NU_CPF: cpf,
+            TP_EXCLUSAO: tp_exclusao,
+          };
+
+      const response = await formsFetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
       
       if (!response.ok) {
         throw new Error("Erro ao salvar os dados");
